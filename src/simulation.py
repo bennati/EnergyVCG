@@ -238,7 +238,10 @@ class MeasurementGenNormal(BaseMeasurementGen):
         """
         Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
         """
-        ret=[{"value":max(0.01,np.random.normal(loc=self.mu,scale=self.s)),"cost":0,"timestep":timestep,"agentID":i} for i in range(len(population))]
+        vals=[max(0.01,np.random.normal(loc=self.mu,scale=self.s)) for _ in population]
+        thresh=np.random.randint(1,3)
+        assert(thresh<=sum(vals))
+        ret=[{"value":v,"cost":0,"timestep":timestep,"agentID":i,"threshold":thresh} for i,v in zip(range(len(population)),vals)]
         return ret
 
 class MeasurementGenBinomial(BaseMeasurementGen):
@@ -254,9 +257,12 @@ class MeasurementGenBinomial(BaseMeasurementGen):
         """
         Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
         """
-        ret=[{"value":(max(0.01,np.random.normal(loc=self.mu1,scale=self.s1))
+        vals=[(max(0.01,np.random.normal(loc=self.mu1,scale=self.s1))
                        if i>len(population)*self.sep else
-                       max(0.01,np.random.normal(loc=self.mu2,scale=self.s2))),"cost":0,"timestep":timestep,"agentID":i} for i in range(len(population))]
+               max(0.01,np.random.normal(loc=self.mu2,scale=self.s2))) for i in range(len(population))]
+        thresh=np.random.randint(1,3)
+        assert(thresh<=sum(vals))
+        ret=[{"value":v,"cost":0,"timestep":timestep,"agentID":i,"threshold":thresh} for i,v in zip(range(len(population)),vals)]
         return ret
 
 if __name__ == '__main__':
