@@ -11,17 +11,18 @@ from Supervisor import *
 
 def run_experiment(test,conf):
     log_tot=[]
-    for idx,r in expandgrid(conf["params"]).iterrows():
-        params=r.to_dict()
+    for r in range(conf["reps"]):
+        for idx,p in expandgrid(conf["params"]).iterrows():
+            params=p.to_dict()
+            params.update({"repetition":r})
         f=functools.partial(conf["meas_fct"],**params)
-        model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=DecisionLogicEmpty,reward_fct=RewardLogicUniform,agent_type=BaseAgent)
-        model.run(conf["rep"],params=params)
+            model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=RewardLogicUniform,agent_type=BaseAgent)
+            model.run(conf["T"],params=params)
         log_tot=log_tot+model.log # concatenate lists
-    #print(log_tot)
     # compute statistics for all tables in log file
     varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
     for varname in varnames:
-        stats_rew=get_stats(log_tot,"reward",idx=[varname])
+        stats_rew=get_stats(log_tot,"reward",idx=[varname],cols=["reward"])
         stats_perc=get_stats(log_tot,"perception",idx=[varname],cols=["value","cost"])
         stats_decs=get_stats(log_tot,"decisions",idx=[varname],cols=["contribution","cost","contributed"])
         stats_eval=get_stats(log_tot,"evaluation",idx=[varname],cols=["gini","cost","efficiency","social_welfare","success","tot_contrib"])
@@ -86,7 +87,7 @@ class DecisionLogicEmpty(BaseDecisionLogic):
     def get_decision(self,perceptions):
         pass
 
-    def get_feedback(self,perceptions,reward):
+    def feedback(self,perceptions,reward):
         pass
 
 class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
@@ -259,8 +260,9 @@ class MeasurementGenBinomial(BaseMeasurementGen):
         return ret
 
 if __name__ == '__main__':
-    #tests={"uniform":{"N":10,"rep":10,"params":{"mu":[5,20,50]},"meas_fct":MeasurementGenNormal,"dec_fct_sup":DecisionLogicSupervisorMandatory},"binomial":{"N":10,"rep":10,"params":{"mu1":[1],"mu2":[5,20,50],"rich":[0.2,0.5,0.8]},"meas_fct":MeasurementGenBinomial,"dec_fct_sup":DecisionLogicSupervisorMandatory}}
-    tests={"knapsack":{"rep":30,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorKnapsack}}
-    #tests={"binomial":{"N":10,"rep":10,"params":{"mu1":[1],"mu2":[5,20,50],"rich":[0.2,0.5,0.8]},"meas_fct":MeasurementGenBinomial,"dec_fct_sup":DecisionLogicSupervisorMandatory}}
+    # tests={"uniform":{"T":10,"reps":2,"params":{"N":[10],"mu":[5,20,50]},"meas_fct":MeasurementGenNormal,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty},"binomial":{"T":10,"reps":2,"params":{"N":[10],"mu1":[1],"mu2":[5,20,50],"rich":[0.2,0.5,0.8]},"meas_fct":MeasurementGenBinomial,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty}}
+    #tests={"knapsack":{"T":30,"reps":2,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorKnapsack,"dec_fct":DecisionLogicEmpty}}
+    tests={"aspiration":{"T":100,"reps":2,"params":{"N":[5,10,20],"n1":[0],"n2":[2]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicAspiration}}
+    #tests={"binomial":{"T":10,"reps":2,"params":{"N":10,"mu1":[1],"mu2":[5,20,50],"rich":[0.2,0.5,0.8]},"meas_fct":MeasurementGenBinomial,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty}}
     for test,conf in tests.items():
         run_experiment(test,conf)
