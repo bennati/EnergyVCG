@@ -196,7 +196,7 @@ class BaseSupervisor(Model):
         A list of measures on the population behavior
         """
         if threshold is None:
-            threshold=1
+            threshold=max([p["threshold"] for p in self.current_state["perception"]])
         if rewards is None:
             assert(self.current_state["reward"] is not None)
             rewards=self.current_state["reward"]
@@ -231,10 +231,11 @@ class BaseSupervisor(Model):
         self.current_state.update({"timestep":self.schedule.steps})
         perception=self.perception_dict(self.schedule.steps) # generate measurements
         self.current_state.update({"perception":perception}) # generate measurements
+        thresh=max([p["threshold"] for p in perception])
         self.perception()               # communicate them to agents
         self.schedule.step()    # agents decide
         decisions=self.decisions(perception) # collect decisions
         self.current_state.update({"decisions":decisions}) # collect decisions
         self.current_state.update({"reward":self.feedback(decisions)})
-        self.current_state.update({"evaluation":self.evaluate(decisions)})
+        self.current_state.update({"evaluation":self.evaluate(decisions,threshold=thresh)})
         #self.__log()
