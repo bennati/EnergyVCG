@@ -18,10 +18,13 @@ class BaseEvaluationLogic():
         """
         contributions,values,costs=zip(*[(d["contributed"],d["contribution"],d["cost"]) for d in decisions])
         rews=[i["reward"] for i in rewards]
-        tc=tot_contributions([int(c) for c in contributions])
-        return [{"gini":gini(values),
+        tc=np.nansum(values)
+        return [{"timestep": decisions[0]["timestep"],
+                 "gini":gini(values),
                 "cost":cost(costs),
                 "social_welfare":social_welfare(costs,rews),
-                "efficiency":efficiency(threshold,tc),
-                "success":success(threshold,tc),
-                "tot_contrib":tc}]
+                "efficiency":efficiency(threshold,np.nansum(values)),
+                "success":success(threshold,np.nansum(values)),
+                 "tot_contrib":tc,
+                 "num_contrib":tot_contributions([int(c) for c in contributions])}]
+## TODO gini for number of contributions

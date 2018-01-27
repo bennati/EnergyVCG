@@ -16,6 +16,7 @@ def gini(array):
     http://www.statsdirect.com/help/default.htm#nonparametric_methods/gini.htm
     """
     # All values are treated equally, arrays must be 1d:
+    array=np.nan_to_num(array)
     array=np.array(array,dtype=np.float64)
     array = array.flatten()
     if len(array)==0:
@@ -180,7 +181,7 @@ def plot_trend(df,xname,filename,trends=None):
 def plot_measures(df,xname,filename,trends=None):
     fig=plt.figure()
     for measures,ylim,i in [[["efficiency","success","gini"],[0,1],0]
-                            ,[["cost","social_welfare","tot_contrib"],None,1]]:
+                            ,[["cost","social_welfare","num_contrib"],None,1]]:
         ax = fig.add_subplot(121+i)
         x=df[xname]
         ax.set_xlabel(xname)
