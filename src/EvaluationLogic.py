@@ -4,7 +4,7 @@ class BaseEvaluationLogic():
     def __init__(self):
         np.random.seed()
 
-    def get_evaluation(self,decisions,rewards,threshold):
+    def get_evaluation(self,decisions,rewards,threshold=None):
         """
         Computes the measures for this round
 
@@ -17,6 +17,8 @@ class BaseEvaluationLogic():
         A list of dictionaries containing the evaluation of the population behavior
         """
         contributions,values,costs=zip(*[(d["contributed"],d["contribution"],d["cost"]) for d in decisions])
+        if threshold is None:
+            threshold=max([p["threshold"] for p in decisions])
         rews=[i["reward"] for i in rewards]
         tc=np.nansum(values)
         return [{"timestep": decisions[0]["timestep"],

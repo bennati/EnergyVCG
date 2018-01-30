@@ -8,4 +8,4 @@ class BaseMeasurementGen():
         """
         Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
         """
-        return [{"value":0,"timestep":timestep,"agentID":i} for i in range(len(population))]
+        return [{"value":0,"timestep":timestep,"agentID":i,"threshold":0} for i in range(len(population))]
