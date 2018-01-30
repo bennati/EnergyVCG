@@ -6,71 +6,16 @@ import itertools
 import numpy as np
 import pandas as pd
 
-class MeasurementGenQlearn(BaseMeasurementGen):
-    """
-    Use integers
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-        self.n1=kwargs["n1"]
-        self.n2=kwargs["n2"]
-        assert(self.n1>=0)
-        assert(self.n2>self.n1)
-
-    def get_measurements(self,population,timestep):
-        """
-        Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
-        """
-        vals=[np.random.randint(self.n1,self.n2) for _ in population]
-        costs=[0 for _ in population]
-        # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))
-        thresh=np.random.randint(1,3)
-        assert(thresh<=sum(vals))
-        ret=[{"value":v,"cost":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]
-        return ret
-
-class RewardLogicQlearn(BaseRewardLogic):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.model.measurement_fct.n2 is None:
-            print("warning, n2 not initialized")
-            self.benefit=20
-            self.damage=10
-        else:
-            self.benefit=self.model.measurement_fct.n2*3
-            self.damage=self.model.measurement_fct.n2
-
-    def get_rewards(self,decisions):
-        """
-        The threshold is randomly generated around the average contribution
-        """
-        thresh=max([p["threshold"] for p in self.model.current_state["perception"]])
-        contribs=np.sum([d["contribution"] for d in decisions if d["contributed"]])
-        # if thresh<=contribs:
-        #     print("success "+str(thresh)+" "+str(contribs))
-        # else:
-        #     print("insuccess "+str(thresh)+" "+str(contribs))
-        outcome=success(thresh,contribs)
-        costs=np.array([(d["cost"] if d["contributed"] else 0) for d in decisions])
-        assert(all(costs==0))
-        if outcome==1:
-            ret=-costs+self.benefit
-        else:
-            # print("unsuccessful")
-            ret=-costs+self.damage
-        ret=[{"reward":r} for r in ret]
-        return ret
-
 class DecisionLogicQlearn(BaseDecisionLogic):
     def __init__(self,model,wl=2,gamma = 0.5,alpha = 0.5,epsilon = 0.7):
         super().__init__(model)
-        self.gamma = 0 #gamma
+        self.gamma = 0 #gamma TODO
         self.alpha = alpha
         self.epsilon = epsilon
         self.last_actions=0
         self.reward=0
-        self.possible_values=list(range(self.model.model.measurement_fct.n1,self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
-        self.possible_costs=[0] #list(range(self.model.model.measurement_fct.n1,self.model.model.measurement_fct.n2))
+        self.possible_values=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
+        self.possible_costs=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
         self.actions=[0,1]
         self.payoffs=[0]*len(self.actions)
         self.window_len=0
@@ -95,7 +40,8 @@ class DecisionLogicQlearn(BaseDecisionLogic):
         https://gist.github.com/kastnerkyle/d127197dcfdd8fb888c2
         """
         if reward<0:
-            print("Warning, negative reward: "+str(reward))
+            # print("Warning, negative reward: "+str(reward))
+            reward=0
         qsa = self.q[state, action]
         new_q = qsa + self.alpha * (reward + self.gamma * self.q[next_state, :].max() - qsa)
         self.q[state, action] = new_q
