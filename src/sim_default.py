@@ -17,7 +17,7 @@ class RewardLogicFull(BaseRewardLogic):
         percs=np.sum([p["value"] for p in self.model.current_state["perception"]])
         thresh=np.random.uniform(percs*0.8,percs) # almost full contrib
         contribs=np.sum([d["contribution"] for d in decisions])
-        outcome=success(thresh,np.sum(contribs))
+        outcome=success(thresh,contribs)
         if outcome==1:
             costs=np.array([d["cost"] for d in decisions])
             ret=-costs+self.benefit
@@ -36,7 +36,7 @@ class RewardLogicUniform(BaseRewardLogic):
         """
         The threshold is randomly generated around the average contribution
         """
-        thresh=max([p["threshold"] for p in self.model.current_state["perception"]])
+        thresh=max([p["threshold"] for p in decisions])
         contribs=np.sum([d["contribution"] for d in decisions if d["contributed"]])
         # if thresh<=contribs:
         #     print("success "+str(thresh)+" "+str(contribs))
@@ -47,7 +47,7 @@ class RewardLogicUniform(BaseRewardLogic):
         if outcome==1:
             ret=-costs+self.benefit
         else:
-            print("unsuccessful")
+            # print("unsuccessful")
             ret=-costs+self.damage
         ret=[{"reward":r} for r in ret]
         return ret
@@ -69,7 +69,7 @@ class DecisionLogicSupervisorEmpty(BaseDecisionLogic):
     def get_decision(self,perceptions):
         decs=[a.decisions(p) for a,p in zip(self.model.schedule.agents,perceptions)]
         #print(decs)
-        self.last_actions=[{"contribution":(p["value"] if d else np.nan),"cost":p["cost"],"agentID":p["agentID"],"contributed":d,"timestep":p["timestep"]} for p,d in zip(perceptions,decs)]
+        self.last_actions=[{"contribution":(p["value"] if d else np.nan),"cost":p["cost"],"agentID":p["agentID"],"contributed":d,"timestep":p["timestep"],"threshold":p["threshold"]} for p,d in zip(perceptions,decs)]
         return self.last_actions
 
 class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
@@ -77,7 +77,7 @@ class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
     Returns a constant decision
     """
     def get_decision(self,perceptions):
-        self.last_actions=[{"contribution":a["value"],"cost":a["cost"],"agentID":a["agentID"],"contributed":True,"timestep":a["timestep"]} for a in perceptions]
+        self.last_actions=[{"contribution":a["value"],"cost":a["cost"],"agentID":a["agentID"],"contributed":True,"timestep":a["timestep"],"threshold":a["threshold"]} for a in perceptions]
         return self.last_actions
 
 class DecisionLogicSupervisorProbabilistic(BaseDecisionLogic):
@@ -86,7 +86,7 @@ class DecisionLogicSupervisorProbabilistic(BaseDecisionLogic):
     """
     def get_decision(self,perceptions):
         ds=[(True if np.random.uniform()<=0.5 else False) for _ in range(len(perceptions))]
-        self.last_actions=[{"contribution":(a["value"] if d else np.nan),"cost":a["cost"],"agentID":a["agentID"],"contributed":d,"timestep":a["timestep"]} for a,d in zip(perceptions,ds)]
+        self.last_actions=[{"contribution":(a["value"] if d else np.nan),"cost":a["cost"],"agentID":a["agentID"],"contributed":d,"timestep":a["timestep"],"threshold":a["threshold"]} for a,d in zip(perceptions,ds)]
         return self.last_actions
 
 class MeasurementGenUniform(BaseMeasurementGen):
@@ -94,16 +94,19 @@ class MeasurementGenUniform(BaseMeasurementGen):
         super().__init__()
         self.n1=kwargs["n1"]
         self.n2=kwargs["n2"]
+        assert(self.n1>=0)
+        assert(self.n2>self.n1)
 
     def get_measurements(self,population,timestep):
         """
         Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
         """
         vals=[max(1,np.random.randint(self.n1,self.n2)) for _ in population]
+        costs=[max(1,np.random.randint(self.n1,self.n2)) for _ in population]
         # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))
         thresh=len(population) #np.random.randint(1,3)
         assert(thresh<=sum(vals))
-        ret=[{"value":v,"cost":max(1,np.random.randint(self.n1,self.n2)),"timestep":timestep,"agentID":i,"threshold":thresh} for i,v in enumerate(vals)]
+        ret=[{"value":v,"cost":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]
         return ret
 
 class MeasurementGenNormal(BaseMeasurementGen):

@@ -12,8 +12,7 @@ from utils import *
 class BaseSupervisor(Model):
 
     def __init__(self,N,measurement_fct=BaseMeasurementGen,decision_fct=BaseDecisionLogic,agent_decision_fct=BaseDecisionLogic,reward_fct=BaseRewardLogic,evaluation_fct=BaseEvaluationLogic,agent_type=BaseAgent):
-        super().__init__(N)
-        np.random.seed()
+        super().__init__()
         # parameters
         self.measurement_fct=measurement_fct()
         self.decision_fct=decision_fct(self)
@@ -22,7 +21,7 @@ class BaseSupervisor(Model):
         self.agent_decision_fct=agent_decision_fct # keep it a class as it will be instanciated in the agent init
         self.agent_type=agent_type
         self.log=[]
-        self.N=N
+        self.N=int(N)
         if self.N<=0:
             raise AssertionError("Initializing empty population")
         self.schedule = RandomActivation(self)
@@ -195,8 +194,6 @@ class BaseSupervisor(Model):
         Returns:
         A list of measures on the population behavior
         """
-        if threshold is None:
-            threshold=max([p["threshold"] for p in self.current_state["perception"]])
         if rewards is None:
             assert(self.current_state["reward"] is not None)
             rewards=self.current_state["reward"]

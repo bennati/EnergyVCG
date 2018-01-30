@@ -1,3 +1,5 @@
+import numpy as np
+from copy import copy
 from DecisionLogic import BaseDecisionLogic
 
 class DecisionLogicAspiration(BaseDecisionLogic):
