@@ -154,19 +154,25 @@ def get_stats(log,varname,idx=["timestep"],cols=None):
     df=[pd.DataFrame(i[varname]) for i in log]
     return compute_stats(df,idx=idx,columns=cols)
 
-def plot_trend(df,xname,filename,trends=None):
+def plot_trend(df,xname,filename,trends=None,yname=None):
     if trends is None:
         trends=[d[:-5] for d in df.columns if ("_mean" in d)]
     fig,ax=plt.subplots()
-    x=df[xname]
     ax.set_xlabel(xname)
+    if yname is None:
+        data=[(df,None)]
+    else:
+        data=[(df[df[yname]==i],i) for i in df[yname].unique()]
     #fig.suptitle(title)
     #ax.set_ylabel(ylab or str(y))
     # if ylim:
     #     ax.set_ylim(ylim)
+    for d,l in data:
+        x=d[xname]
     for y in trends:
-        ax.plot(x,df[y+"_mean"],label=y)
-        ax.fill_between(x,np.asarray(df[y+"_mean"])-np.asarray(df[y+"_ci"]),np.asarray(df[y+"_mean"])+np.asarray(df[y+"_ci"]),alpha=0.2)
+            lab=(y if l is None else yname+"="+str(l))
+            ax.plot(x,d[y+"_mean"],label=lab)
+            ax.fill_between(x,np.asarray(d[y+"_mean"])-np.asarray(d[y+"_ci"]),np.asarray(d[y+"_mean"])+np.asarray(d[y+"_ci"]),alpha=0.2)
     fig.legend()
     fig.savefig(filename,format='pdf')
     plt.close(fig)
