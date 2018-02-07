@@ -77,6 +77,7 @@ class BaseAgent(Agent):
         perceptions: the perception dictionaries for each agent
         population: the other agents, in case information about them is known
         """
+        perceptions.update({'agentID':self.unique_id})
         self.current_state.update({"perception":perceptions})
 
     def step(self):
