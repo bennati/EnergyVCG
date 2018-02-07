@@ -67,9 +67,10 @@ class DecisionLogicSupervisorEmpty(BaseDecisionLogic):
     Returns a constant decision
     """
     def get_decision(self,perceptions):
-        decs=[a.decisions(p) for a,p in zip(self.model.schedule.agents,perceptions)]
+        decs=[a.get_decision() for a in self.model.schedule.agents]
+        idxs=[a.unique_id for a in self.model.schedule.agents]
         #print(decs)
-        self.last_actions=[{"contribution":(p["value"] if d else np.nan),"cost":p["cost"],"agentID":p["agentID"],"contributed":d,"timestep":p["timestep"],"threshold":p["threshold"]} for p,d in zip(perceptions,decs)]
+        self.last_actions=[{"contribution":(p["value"] if d else np.nan),"cost":p["cost"],"agentID":i,"contributed":d,"timestep":p["timestep"],"threshold":p["threshold"]} for p,d,i in zip(perceptions,decs,idxs)]
         return self.last_actions
 
 class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
@@ -77,7 +78,7 @@ class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
     Returns a constant decision
     """
     def get_decision(self,perceptions):
-        self.last_actions=[{"contribution":a["value"],"cost":a["cost"],"agentID":a["agentID"],"contributed":True,"timestep":a["timestep"],"threshold":a["threshold"]} for a in perceptions]
+        self.last_actions=[{"contribution":a["value"],"cost":a["cost"],"agentID":i,"contributed":True,"timestep":a["timestep"],"threshold":a["threshold"]} for i,a in enumerate(perceptions)]
         return self.last_actions
 
 class DecisionLogicSupervisorProbabilistic(BaseDecisionLogic):
@@ -86,7 +87,7 @@ class DecisionLogicSupervisorProbabilistic(BaseDecisionLogic):
     """
     def get_decision(self,perceptions):
         ds=[(True if np.random.uniform()<=0.5 else False) for _ in range(len(perceptions))]
-        self.last_actions=[{"contribution":(a["value"] if d else np.nan),"cost":a["cost"],"agentID":a["agentID"],"contributed":d,"timestep":a["timestep"],"threshold":a["threshold"]} for a,d in zip(perceptions,ds)]
+        self.last_actions=[{"contribution":(a["value"] if d else np.nan),"cost":a["cost"],"agentID":i,"contributed":d,"timestep":a["timestep"],"threshold":a["threshold"]} for i,(a,d) in enumerate(zip(perceptions,ds))]
         return self.last_actions
 
 class MeasurementGenUniform(BaseMeasurementGen):
@@ -101,8 +102,8 @@ class MeasurementGenUniform(BaseMeasurementGen):
         """
         Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
         """
-        vals=[max(1,np.random.randint(self.n1,self.n2)) for _ in population]
-        costs=[max(1,np.random.randint(self.n1,self.n2)) for _ in population]
+        vals=[np.random.randint(max(1,self.n1),self.n2) for _ in population]
+        costs=[np.random.randint(max(1,self.n1),self.n2) for _ in population]
         # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))
         thresh=len(population) #np.random.randint(1,3)
         assert(thresh<=sum(vals))
@@ -122,7 +123,7 @@ class MeasurementGenNormal(BaseMeasurementGen):
         vals=[max(0.01,np.random.normal(loc=self.mu,scale=self.s)) for _ in population]
         thresh=len(population) #np.random.randint(1,10)
         assert(thresh<=sum(vals))
-        ret=[{"value":v,"cost":0,"timestep":timestep,"agentID":i,"threshold":thresh} for i,v in zip(range(len(population)),vals)]
+        ret=[{"value":v,"cost":0,"timestep":timestep,"threshold":thresh} for v in vals]
         return ret
 
 class MeasurementGenBinomial(BaseMeasurementGen):
@@ -143,5 +144,5 @@ class MeasurementGenBinomial(BaseMeasurementGen):
                max(0.01,np.random.normal(loc=self.mu2,scale=self.s2))) for i in range(len(population))]
         thresh=len(population) #np.random.randint(1,10)
         assert(thresh<=sum(vals))
-        ret=[{"value":v,"cost":0,"timestep":timestep,"agentID":i,"threshold":thresh} for i,v in zip(range(len(population)),vals)]
+        ret=[{"value":v,"cost":0,"timestep":timestep,"threshold":thresh} for v in vals]
         return ret
