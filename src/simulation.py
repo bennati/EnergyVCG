@@ -138,16 +138,16 @@ def run_experiment(test,conf):
             tmp=subset_df(stats_q,p)
             f=lambda df,col: np.histogram2d(df["state_cost"],df["state_val"],weights=df[col+"_mean"],bins=[np.append(df["state_val"].unique(),[df["state_val"].max()+1]),np.append(df["state_cost"].unique(),[df["state_cost"].max()+1])])
             heatmap_choice,xlabs,ylabs=f(tmp,"yes")
-            plot_hmap(heatmap_choice,"Average qvalue associated to contribution",str(test)+"_heat_q_choice"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost")
+            plot_hmap(heatmap_choice,"Average qvalue associated to contribution",str(test)+"_heat_q_choice"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost",ticks=[range(len(xlabs[:-1])),range(len(ylabs[:-1]))],ticklabs=[xlabs[:-1],ylabs[:-1]],inverty=False)
             heatmap_count,xlabs,ylabs=f(tmp,"num")
-            plot_hmap(heatmap_count,"Average number of occurrences of a state",str(test)+"_heat_q_count"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost")
+            plot_hmap(heatmap_count,"Average number of occurrences of a state",str(test)+"_heat_q_count"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost",ticks=[range(len(xlabs[:-1])),range(len(ylabs[:-1]))],ticklabs=[xlabs[:-1],ylabs[:-1]],inverty=False)
             ## compute histograms
             q_exp=subset_df(qtables,p) # subset with current experimental conditions
             plot_qtable_hist(q_exp,"./plots/"+str(test)+"_qhist_"+pdesc+".pdf","state_val","state_cost","yes",str(dict(p)))
 
 if __name__ == '__main__':
     tests={"qlearn":{"T":1000,"reps":3,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicQlearn,"rew_fct":RewardLogicUniform}}#
-    # tests={"aspiration":{"T":20,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,4,5,6,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicAspiration,"rew_fct":RewardLogicUniform}}
+    #tests={"aspiration":{"T":100,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,3,4,5,6,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicAspiration,"rew_fct":RewardLogicUniformAspir}}
     # tests={"mandatory":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
     # tests={"knapsack":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorKnapsack,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
     for test,conf in tests.items():
