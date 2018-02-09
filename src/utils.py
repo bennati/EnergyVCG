@@ -210,7 +210,7 @@ def expandgrid(dct):
     """
     return pd.DataFrame(list(itertools.product(*dct.values())),columns=list(dct.keys()))
 
-def plot_hmap(heatmap,title,filename,plot_dir,xlab="compr2",xlab2="",ylab="compr",xlim=None,ylim=None,ticks=None,ticklabs=None,scale_percent=False,ticklabs_2x=None,ticklabs_2y=None,show_contour=False,font_size=16,cmap=None,num_decimals_legend=2,display_text=False):
+def plot_hmap(heatmap,title,filename,plot_dir,xlab="compr2",xlab2="",ylab="compr",xlim=None,ylim=None,ticks=None,ticklabs=None,scale_percent=False,ticklabs_2x=None,ticklabs_2y=None,show_contour=False,font_size=16,cmap=None,num_decimals_legend=2,display_text=False,inverty=True):
     fig,ax=plt.subplots()
     fig.suptitle(title,fontsize=font_size)
     masked_array = np.ma.array (heatmap, mask=np.isnan(heatmap))
@@ -246,6 +246,7 @@ def plot_hmap(heatmap,title,filename,plot_dir,xlab="compr2",xlab2="",ylab="compr
         plt.clabel(CS, inline=1, fontsize=font_size)
     ax.set_ylabel(ylab,fontsize=font_size)
     ax.set_xlabel(xlab,fontsize=font_size)
+    if inverty:
     plt.gca().invert_yaxis()
     if not ticks==None:
         if len(ticks)==2:
@@ -310,6 +311,8 @@ def plot_qtable_hist(qtab,filename,xcol,ycol,valcol,title):
     for i,(c,v) in expandgrid({'c':ys,'v':xs}).iterrows():
         q_state=qtab[(qtab[xcol]==v) & (qtab[ycol]==c)] # subset with current state
         hist=q_state[valcol].value_counts().sort_index()
+        assert(sum(hist)==q_state["N"].max()*(q_state["repetition"].max()+1)) # the number of rows corresponds to pop size * repetitions
+        hist/=sum(hist)         # normalize
         #a=hist.plot.bar(ax=ax[i//len(xs)][i%len(xs)])                ## todo check that order of plots is correct
         ax[i//len(xs)][i%len(xs)].bar(x=hist.index,height=hist,width=0.1)
         #a.set_title(str(i)+" v:"+str(v)+" c:"+str(c))
