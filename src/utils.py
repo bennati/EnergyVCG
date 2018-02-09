@@ -1,6 +1,7 @@
 import pandas as pd
 import itertools
 import matplotlib
+import os
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
@@ -208,3 +209,115 @@ def expandgrid(dct):
     Returns: A dataframe where the columns are the variables and the rows contain combinations of values
     """
     return pd.DataFrame(list(itertools.product(*dct.values())),columns=list(dct.keys()))
+
+def plot_hmap(heatmap,title,filename,plot_dir,xlab="compr2",xlab2="",ylab="compr",xlim=None,ylim=None,ticks=None,ticklabs=None,scale_percent=False,ticklabs_2x=None,ticklabs_2y=None,show_contour=False,font_size=16,cmap=None,num_decimals_legend=2,display_text=False):
+    fig,ax=plt.subplots()
+    fig.suptitle(title,fontsize=font_size)
+    masked_array = np.ma.array (heatmap, mask=np.isnan(heatmap))
+    if cmap==None:
+        cmap = matplotlib.cm.jet
+    cmap.set_bad('white',1.)
+    if scale_percent:
+        plt.imshow(masked_array, interpolation='nearest', cmap=cmap,vmin=0,vmax=1)
+        cbar=plt.colorbar()
+        t=np.arange(0,1.01,0.2)
+        cbar.set_ticks(t)
+        cbar.set_ticklabels([str(int(i*100))+"%" for i in t])
+        cbar.ax.tick_params(labelsize=font_size)
+    else:
+        plt.imshow(masked_array, interpolation='nearest', cmap=cmap, aspect='auto')
+        vmax=round(np.max(masked_array),num_decimals_legend)
+        vmin=round(np.min(masked_array),num_decimals_legend)
+        term=False
+        step=10**(-num_decimals_legend)
+        while not term:
+            cbar_ticks=np.arange(vmin,vmax+step,step)
+            if len(cbar_ticks)<10:
+                term=True
+            else:
+                step*=2
+        # cbar=plt.colorbar(format="%."+str(num_decimals_legend)+"f")
+        cbar=plt.colorbar()
+        cbar.set_ticks(cbar_ticks)
+        cbar.set_ticklabels(cbar_ticks)
+        cbar.ax.tick_params(labelsize=font_size)
+    if show_contour:
+        CS = plt.contour(masked_array,colors='k')
+        plt.clabel(CS, inline=1, fontsize=font_size)
+    ax.set_ylabel(ylab,fontsize=font_size)
+    ax.set_xlabel(xlab,fontsize=font_size)
+    plt.gca().invert_yaxis()
+    if not ticks==None:
+        if len(ticks)==2:
+            xticks=ticks[0]
+            yticks=ticks[1]
+        else:
+            xticks=ticks
+            yticks=ticks
+        ax.set_xticks(xticks)
+        ax.set_yticks(yticks)
+    if not ticklabs==None:
+        if len(ticklabs)==2:
+            xticks_l=ticklabs[0]
+            yticks_l=ticklabs[1]
+        else:
+            xticks_l=ticklabs
+            yticks_l=ticklabs
+        ax.set_xticklabels(xticks_l)
+        ax.set_yticklabels(yticks_l)
+    ax.tick_params(labelsize=font_size)
+    if xlim:
+        ax.set_xlim(xlim)
+    if ylim:
+        ax.set_ylim(ylim)
+    if not ticklabs_2x==None:
+        ax2=ax.twiny()
+        ax2.set_xlim(ax.get_xlim())
+        ax2.set_xticks(xticks)
+        ax2.set_xlabel(xlab2,fontsize=font_size)
+        ax2.tick_params(labelsize=font_size)
+        ax2.set_xticklabels(ticklabs_2x)
+    if not ticklabs_2y==None:
+        ax2y=ax.twinx()
+        ax2y.set_ylim(ax.get_ylim())
+        ax2y.set_yticks(yticks)
+        plt.setp(ax2y.yaxis.get_majorticklabels(),rotation=-90)
+        ax2y.set_yticklabels(ticklabs_2y)
+        #ax2y.tick_params(labelsize=16)
+    if display_text:
+        for j,i in apply(itertools.product,[range(x) for x in heatmap.shape]): # every cell in the matrix
+            if (not xlim or (i>=xlim[0] and i<=xlim[1])) and (not ylim or (j>=ylim[0] and j<=ylim[1])):
+                ax.text(i,j,round(heatmap[j,i],3), va='center', ha='center',color='y')
+    fig.tight_layout()
+    plt.subplots_adjust(top=0.9)
+    fig.savefig(os.path.join(plot_dir,filename),format='pdf')
+    plt.close(fig)
+
+def plot_qtable_hist(qtab,filename,xcol,ycol,valcol,title):
+    xs=qtab[xcol].unique()
+    ys=qtab[ycol].unique()
+    fig,ax=plt.subplots(len(ys),len(xs),sharex="col",sharey="col")
+    if not isinstance(ax,list) and not isinstance(ax,np.ndarray):
+        print(ax)
+        ax=[[ax]]
+    fig.suptitle(title)
+    fig.text(0.5, 0.01, xcol, ha='center')
+    fig.text(0.01, 0.5, ycol, va='center', rotation='vertical')
+    # find common ticks
+    ticks=qtab[valcol].unique()
+    ticks.sort()
+    plt.setp(ax, xticks=ticks,xticklabels=["No"]+[""]*(len(ticks)-2)+["Yes"])
+    for i,(c,v) in expandgrid({'c':ys,'v':xs}).iterrows():
+        q_state=qtab[(qtab[xcol]==v) & (qtab[ycol]==c)] # subset with current state
+        hist=q_state[valcol].value_counts().sort_index()
+        #a=hist.plot.bar(ax=ax[i//len(xs)][i%len(xs)])                ## todo check that order of plots is correct
+        ax[i//len(xs)][i%len(xs)].bar(x=hist.index,height=hist,width=0.1)
+        #a.set_title(str(i)+" v:"+str(v)+" c:"+str(c))
+        # set labels
+        if i%len(xs)==0:
+            ax[i//len(xs)][i%len(xs)].set_ylabel(ys[i//len(xs)])
+        if i//len(xs)==0:
+            ax[i//len(xs)][i%len(xs)].set_title(xs[i%len(xs)])
+    fig.tight_layout()
+    fig.savefig(filename,format='pdf')
+

@@ -3,6 +3,7 @@ import itertools
 import pandas as pd
 import numpy as np
 from copy import copy
+import functools
 from DecisionLogic import BaseDecisionLogic
 from RewardLogic import BaseRewardLogic
 from MeasurementGen import BaseMeasurementGen
@@ -36,9 +37,14 @@ def compute_contrib_hist(decisions,varnames):
     ret=ret.reset_index(level=[0,1,2]).reset_index(level=0,drop=True) # convert indexes to columns
     return ret
 
+def subset_df(df,conditions):
+    ret=df[functools.reduce(np.logical_and,[(df[k]==v) for k,v in zip(conditions.index,conditions)])] # select only a subset of the table matching the parameters
+    return ret.reset_index()
+
 def run_experiment(test,conf):
     log_tot=[]
     qtables=[]
+    qlearning=False
     for r in range(conf["reps"]):
         print("repetition: "+str(r))
         for idx,p in expandgrid(conf["params"]).iterrows():
@@ -51,45 +57,99 @@ def run_experiment(test,conf):
             try:
                 tab=pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in model.schedule.agents])
                 tab=tab.rename(columns={0:"no",1:"yes"})
+                tab2=pd.concat([a.decision_fct.get_qcount().assign(idx=a.unique_id) for a in model.schedule.agents]) # get the number of experiences for each state
+                tab["index"]=tab.index
+                tab2["index"]=tab2.index
+                tab=pd.merge(tab,tab2,right_on=["idx","index"],left_on=["idx","index"]) # merge along the index and agent id
                 tab["repetition"]=r
+                print(params)
+                print(tab)
                 for k,v in dict(p).items():
                     tab[k]=v
                 qtables=qtables+[tab]
+                qlearning=True
             except:
                 print("Qtable not defined")
     # compute statistics for all tables in log file
     varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
-    ## TODO count how many times they enter each state
-    ## TODO each state/action around 10 steps
-    # compute stats qtables
-    qtables=compute_stats([pd.concat(qtables).reset_index()],idx=varnames+["index"],columns=["no","yes"])
-    stats_evalt=get_stats(log_tot,"evaluation",idx=["timestep"],cols=["gini","cost","efficiency","social_welfare","success","num_contrib"])
-    plot_measures(stats_evalt,"timestep","./eval_"+str(test)+"_"+str("time")+".pdf")
+    # TODO count how many times they enter each state
+    # TODO each state/action around 10 steps
+    ### prepare tables ###
     stats_gini_contribs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
     contrib_hist=compute_contrib_hist(stats_gini_contribs,varnames)
-    ## aggregate over all agent ids and compute gini coefficients
+    contrib_hist.to_csv("./data/contrib_hist.csv.gz",index=False,compression='gzip')
+    #contrib_hist=pd.read_csv("./data/contrib_hist.csv.gz")
+    # aggregate over all agent ids and compute gini coefficients
     stats_gini_contribs=stats_gini_contribs.groupby(varnames+["agentID","repetition"],as_index=False).agg({"contributed":np.sum,"contribution":np.sum}) # sum up all contributions in each simulation (over all timesteps)
     stats_gini_contribs=stats_gini_contribs.groupby(varnames+["repetition"],as_index=False).agg({"contributed":gini,"contribution":gini}) # compute gini coefficient across agents
     stats_gini_contribs=stats_gini_contribs.rename(columns={"contributed":"Contributors","contribution":"Values"})
+    stats_gini_contribs.to_csv("./data/stats_gini_contribs.csv.gz",index=False,compression='gzip')
+    #stats_gini_contribs=pd.read_csv("./data/stats_gini_contribs.csv.gz")
+    ## compute stats qtables
+    if qlearning:
+        qtables=pd.concat(qtables)
+         # transform the index to two separate columns
+        qtables["state_val"]=qtables["index"].transform(lambda x: x[0])
+        qtables["state_cost"]=qtables["index"].transform(lambda x: x[1])
+        qtables.drop("index",axis=1,inplace=True)
+        qtables.to_csv("./data/qtables.csv.gz",index=False,compression='gzip')
+        #qtables=pd.read_csv("./data/qtables.csv.gz")
+    ### start with computing stats across all parameter configurations ###
+    # compute evaluation over time
+    stats_evalt=get_stats(log_tot,"evaluation",idx=["timestep"],cols=["gini","cost","efficiency","social_welfare","success","num_contrib"])
+    stats_evalt.to_csv("./data/stats_evalt.csv.gz",index=False,compression='gzip')
+    #stats_evalt=pd.read_csv("./data/stats_evalt.csv.gz")
+    plot_measures(stats_evalt,"timestep","./plots/"+str(test)+"_eval_"+str("time")+".pdf")
+    if qlearning:
+        qtables_stats=compute_stats([qtables],idx=["state_val","state_cost"],columns=["no","yes","num"])
+        plot_trend(qtables_stats,"state_cost","./plots/"+str(test)+"_qtables_cost.pdf",yname="state_val",trends=["yes"])
+        plot_trend(qtables_stats,"state_val","./plots/"+str(test)+"_qtables_val.pdf",yname="state_cost",trends=["yes"])
+    ### now move to computing statistics that aggregate on one of the parameters ###
     for varname in varnames:
         stats_gini=compute_stats([stats_gini_contribs],[varname],columns=["Contributors","Values"]) # average across repetitions
-        plot_trend(stats_gini,varname,"./gini_"+str(test)+"_"+str(varname)+".pdf")
-        # idx_lvl=np.where(np.asarray(contrib_hist.index.names)==varname)[0][0]
-        # idx_vals=contrib_hist.index.levels[idx_lvl]
+        plot_trend(stats_gini,varname,"./plots/"+str(test)+"_gini_"+str(varname)+".pdf")
         stats_rew=get_stats(log_tot,"reward",idx=[varname],cols=["reward"])
+        plot_trend(stats_rew,varname,"./plots/"+str(test)+"_rewards_"+str(varname)+".pdf")
         stats_perc=get_stats(log_tot,"perception",idx=[varname],cols=["value","cost"])
+        plot_trend(stats_perc,varname,"./plots/"+str(test)+"_perceptions_"+str(varname)+".pdf")
         stats_decs=get_stats(log_tot,"decisions",idx=[varname],cols=["contribution","cost","contributed"])
+        plot_trend(stats_decs,varname,"./plots/"+str(test)+"_decisions_"+str(varname)+".pdf")
         stats_eval=get_stats(log_tot,"evaluation",idx=[varname],cols=["gini","cost","efficiency","social_welfare","success","num_contrib"])
+        plot_measures(stats_eval,varname,"./plots/"+str(test)+"_eval"+str(varname)+".pdf")
         stats_contrib_hist=compute_stats(contrib_hist,idx=[varname,"value"],columns=["cnt"])
-        plot_trend(stats_contrib_hist,"value","./contrib_hist_"+str(test)+"_"+str(varname)+".pdf",yname=varname)
-        plot_trend(stats_rew,varname,"./rewards_"+str(test)+"_"+str(varname)+".pdf")
-        plot_trend(stats_perc,varname,"./perceptions_"+str(test)+"_"+str(varname)+".pdf")
-        plot_trend(stats_decs,varname,"./decisions_"+str(test)+"_"+str(varname)+".pdf")
-        plot_measures(stats_eval,varname,"./eval_"+str(test)+"_"+str(varname)+".pdf")
+        plot_trend(stats_contrib_hist,"value","./plots/"+str(test)+"_contrib_hist_"+str(varname)+".pdf",yname=varname)
 
+    ### now compute statistics for each parameter configuration, aggregating only on repetitions ###
+    stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
+    stats_t=get_stats(log_tot,"evaluation",idx=["timestep"]+varnames,cols=["gini","cost","efficiency","social_welfare","success","num_contrib"])
+    for idx,p in expandgrid({k:conf["params"][k] for k in varnames}).iterrows():
+        pdesc="_".join([str(k)+str(v) for k,v in dict(p).items()])
+        # temporal evolution of measures
+        tmp=subset_df(stats_t,p)
+        plot_measures(tmp,"timestep","./plots/"+str(test)+"_time_"+pdesc+".pdf")
+        # distribution of contributions
+        # tmp=subset_df(stats_contrib_hist2,p)
+        # plot_trend(tmp,"value","./plots/"+str(test)+"_contrib_hist_"+pdesc+".pdf")
+    ## compute qtable heatmaps
+    if qlearning:
+        stats_q=compute_stats([qtables],idx=["state_val","state_cost"]+varnames,columns=["no","yes","num"])
+        for idx,p in expandgrid({k:conf["params"][k] for k in varnames}).iterrows():
+            pdesc="_".join([str(k)+str(v) for k,v in dict(p).items()])
+            tmp=subset_df(stats_q,p)
+            f=lambda df,col: np.histogram2d(df["state_cost"],df["state_val"],weights=df[col+"_mean"],bins=[np.append(df["state_val"].unique(),[df["state_val"].max()+1]),np.append(df["state_cost"].unique(),[df["state_cost"].max()+1])])
+            heatmap_choice,xlabs,ylabs=f(tmp,"yes")
+            plot_hmap(heatmap_choice,"Average qvalue associated to contribution",str(test)+"_heat_q_choice"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost")
+            heatmap_count,xlabs,ylabs=f(tmp,"num")
+            plot_hmap(heatmap_count,"Average number of occurrences of a state",str(test)+"_heat_q_count"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost")
+            ## compute histograms
+            q_exp=subset_df(qtables,p) # subset with current experimental conditions
+            plot_qtable_hist(q_exp,"./plots/"+str(test)+"_qhist_"+pdesc+".pdf","state_val","state_cost","yes",str(dict(p)))
 
 if __name__ == '__main__':
-    tests={"qlearn":{"T":500,"reps":5,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicQlearn,"rew_fct":RewardLogicUniform}}#{"aspiration":{"T":20,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,4,5,6,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicAspiration,"rew_fct":RewardLogicUniform},"mandatory":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform},"knapsack":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorKnapsack,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
+    tests={"qlearn":{"T":1000,"reps":3,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicQlearn,"rew_fct":RewardLogicUniform}}#
+    # tests={"aspiration":{"T":20,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,4,5,6,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicAspiration,"rew_fct":RewardLogicUniform}}
+    # tests={"mandatory":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
+    # tests={"knapsack":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorKnapsack,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
     for test,conf in tests.items():
         run_experiment(test,conf)
     test,conf=list(tests.items())[0]

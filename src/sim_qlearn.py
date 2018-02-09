@@ -26,6 +26,7 @@ class DecisionLogicQlearn(BaseDecisionLogic):
                                            list(itertools.product(range(len(self.actions)),repeat=self.window_len)),
                                            list(itertools.product(range(len(self.actions)),repeat=self.window_len_other)))) # all possible histories
         self.q=np.full([len(self.states),len(self.actions)],0.5)
+        self.q_count=np.full([len(self.states),1],0)
 
     def get_current_state(self):
         ret=np.argwhere([True if a==self.model.current_state["perception"]["value"] and b==self.model.current_state["perception"]["cost"] and c==tuple(self.history) and d==tuple(self.history_other) else False for a,b,c,d in self.states])[0][0]
@@ -34,6 +35,9 @@ class DecisionLogicQlearn(BaseDecisionLogic):
 
     def get_qtable(self):
         return pd.DataFrame(self.q.round(3),columns=self.actions,index=self.states)
+
+    def get_qcount(self):
+        return pd.DataFrame(self.q_count,columns=["num"],index=self.states)
 
     def update_q(self,state, next_state, action, reward):
         """
@@ -52,6 +56,7 @@ class DecisionLogicQlearn(BaseDecisionLogic):
             assert(np.sum(self.q[state]).round(5)==1)
         except AssertionError:
             print("Warning "+str(self.q[state])+" "+str(np.sum(self.q[state])))
+        self.q_count[state]+=1
 
 
     def get_decision(self,perceptions):
