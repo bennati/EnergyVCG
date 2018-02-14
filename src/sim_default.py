@@ -69,8 +69,10 @@ class DecisionLogicSupervisorEmpty(BaseDecisionLogic):
     def get_decision(self,perceptions):
         decs=[a.get_decision() for a in self.model.schedule.agents]
         idxs=[a.unique_id for a in self.model.schedule.agents]
+        tmp1=pd.DataFrame(data={"action":decs,"agentID":idxs})
+        tmp=pd.merge(pd.DataFrame(perceptions),tmp1,on=["agentID"])
         #print(decs)
-        self.last_actions=[{"contribution":(p["value"] if d else np.nan),"cost":p["cost"],"agentID":i,"contributed":d,"timestep":p["timestep"],"threshold":p["threshold"]} for p,d,i in zip(perceptions,decs,idxs)]
+        self.last_actions=[{"contribution":(r[1]["value"] if r[1]["action"] else np.nan),"cost":r[1]["cost"],"agentID":r[1]["agentID"],"contributed":r[1]["action"],"timestep":r[1]["timestep"],"threshold":r[1]["threshold"]} for r in tmp.iterrows()]
         return self.last_actions
 
 class DecisionLogicSupervisorMandatory(BaseDecisionLogic):

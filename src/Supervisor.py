@@ -142,7 +142,9 @@ class BaseSupervisor(Model):
         # else:
             raise TypeError("Malformed perception vector")
         for a,p in zip(self.schedule.agents,perceptions):
+            p.update({'agentID':a.unique_id})
             a.perception(p)
+        assert(perceptions==[a.current_state["perception"] for a in self.schedule.agents])
 
     def feedback(self,decisions,perceptions=None,rewards=None):
         """
@@ -160,6 +162,12 @@ class BaseSupervisor(Model):
         """
         if perceptions is None:
             perceptions=self.current_state["perception"]
+        # debug
+        tmp=pd.merge(pd.DataFrame(perceptions),pd.DataFrame(decisions),on=["agentID"])
+        tmp["value"]=[(r[1]["value"] if r[1]["contributed"]==1 else np.nan) for r in tmp.iterrows()]
+        # print(tmp)
+        assert(((tmp["value"] == tmp["contribution"]) | (np.isnan(tmp["value"]) & np.isnan(tmp["contribution"]))).all())
+        assert(all(tmp["cost_x"]==tmp["cost_y"]))
         if rewards is None or len(rewards)!=self.N:
             if rewards is not None and len(rewards)!=self.N:
                 print("Warning: invalid rewards provided, computing new ones")

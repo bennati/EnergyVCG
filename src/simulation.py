@@ -73,8 +73,6 @@ def run_experiment(test,conf):
                 print("Qtable not defined")
     # compute statistics for all tables in log file
     varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
-    # TODO count how many times they enter each state
-    # TODO each state/action around 10 steps
     ### prepare tables ###
     stats_gini_contribs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
     contrib_hist=compute_contrib_hist(stats_gini_contribs,varnames)
