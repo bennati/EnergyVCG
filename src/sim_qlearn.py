@@ -4,14 +4,43 @@ from MeasurementGen import BaseMeasurementGen
 from utils import *
 import itertools
 import numpy as np
+import math
 import pandas as pd
 
+class RewardLogicUniformQ(BaseRewardLogic):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.benefit=10
+        self.damage=-10
+
+    def get_rewards(self,decisions):
+        """
+        The threshold is randomly generated around the average contribution
+        """
+        thresh=max([p["threshold"] for p in decisions])
+        contribs=np.sum([d["contribution"] for d in decisions if d["contributed"]])
+        # if thresh<=contribs:
+        #     print("success "+str(thresh)+" "+str(contribs))
+        # else:
+        #     print("insuccess "+str(thresh)+" "+str(contribs))
+        outcome=success(thresh,contribs)
+        costs=np.array([(d["cost"] if d["contributed"] else 0) for d in decisions])
+        if outcome==1:
+            ret=-costs+self.benefit
+        else:
+            # print("unsuccessful")
+            ret=-costs+self.damage
+        ret=[{"reward":r} for r in ret]
+        return ret
+
 class DecisionLogicQlearn(BaseDecisionLogic):
-    def __init__(self,model,wl=2,gamma = 0.5,alpha = 0.5,epsilon = 0.7):
+    def __init__(self,model,wl=2,gamma = 0.5,alpha = 0.5,tmax=5):
         super().__init__(model)
         self.gamma = 0 #gamma TODO
         self.alpha = alpha
-        self.epsilon = epsilon
+        self.epsilon = np.random.normal(loc=0.5,scale=0.05)
+        assert(tmax>1)          # required
+        self.temp=np.random.normal(loc=tmax,scale=tmax/2)
         self.last_actions=0
         self.reward=0
         self.possible_values=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
@@ -25,8 +54,8 @@ class DecisionLogicQlearn(BaseDecisionLogic):
         self.states=list(itertools.product(self.possible_values,self.possible_costs, # all possible states
                                            list(itertools.product(range(len(self.actions)),repeat=self.window_len)),
                                            list(itertools.product(range(len(self.actions)),repeat=self.window_len_other)))) # all possible histories
-        self.q=np.full([len(self.states),len(self.actions)],0.5)
-        self.q_count=np.full([len(self.states),1],0)
+        self.q=np.zeros([len(self.states),len(self.actions)])
+        self.q_count=np.zeros([len(self.states),1])
 
     def get_current_state(self):
         ret=np.argwhere([True if a==self.model.current_state["perception"]["value"] and b==self.model.current_state["perception"]["cost"] and c==tuple(self.history) and d==tuple(self.history_other) else False for a,b,c,d in self.states])[0][0]
@@ -43,33 +72,28 @@ class DecisionLogicQlearn(BaseDecisionLogic):
         """
         https://gist.github.com/kastnerkyle/d127197dcfdd8fb888c2
         """
-        if reward<0:
-            # print("Warning, negative reward: "+str(reward))
-            reward=0
+        # if reward<0:
+        #     # print("Warning, negative reward: "+str(reward))
+        #     reward=0
         qsa = self.q[state, action]
         new_q = qsa + self.alpha * (reward + self.gamma * self.q[next_state, :].max() - qsa)
         self.q[state, action] = new_q
         # renormalize row to be between 0 and 1
-        rn = self.q[state][self.q[state] > 0] / np.sum(self.q[state][self.q[state] > 0])
-        self.q[state][self.q[state] > 0] = rn
-        try:
-            assert(np.sum(self.q[state]).round(5)==1)
-        except AssertionError:
-            print("Warning "+str(self.q[state])+" "+str(np.sum(self.q[state])))
+        # rn = self.q[state][self.q[state] > 0] / np.sum(self.q[state][self.q[state] > 0])
+        # self.q[state][self.q[state] > 0] = rn
+        # try:
+        #     assert(np.sum(self.q[state]).round(5)==1)
+        # except AssertionError:
+        #     print("Warning "+str(self.q[state])+" "+str(np.sum(self.q[state])))
         self.q_count[state]+=1
 
 
     def get_decision(self,perceptions):
-        if self.epsilon > 0.0001: # simulated annealing
-            self.epsilon=self.epsilon/1.1
-        rnd=""
+        self.temp=max(0.2,self.temp*0.95)
         current=self.get_current_state()
-        if np.random.random()>=self.epsilon and np.sum(self.q[current]) > 0:
-            self.last_actions = np.argmax(self.q[current])
-        else: # choose random action
-            self.last_actions = np.random.choice(self.actions)
-            rnd="random "
-        # print("agent "+str(self.model.unique_id)+" is choosing "+rnd+"action "+("coop" if self.last_actions==1 else "defect")+" with value "+str(self.value)+" and cost "+str(self.cost))
+        probs=boltzmann(self.q[current],self.temp)
+        self.last_actions = np.digitize([np.random.random()],bins=probs)[0] # choose an action depending on the probabilities
+        assert(self.last_actions in self.actions)
         return self.last_actions
 
     def feedback(self,perceptions,reward):

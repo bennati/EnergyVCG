@@ -7,6 +7,16 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 #rcParams.update({'figure.autolayout': True})
 import numpy as np
+import math
+
+def boltzmann(qtable,temp):
+    probs=[math.exp(q/temp) for q in qtable] # boltzmann equation
+    if sum(probs)==0:
+        probs=[0.5,0.5]
+    else:
+        probs=[np.round(p/sum(probs),2) for p in probs] # normalize
+    assert(sum(probs)==1)
+    return np.cumsum(probs)
 
 def gini(array):
     """Calculate the Gini coefficient of a numpy array.
