@@ -18,6 +18,12 @@ def boltzmann(qtable,temp):
     assert(sum(probs)==1)
     return np.cumsum(probs)
 
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return list(zip(a, b))
+
 def gini(array):
     """Calculate the Gini coefficient of a numpy array.
     https://github.com/oliviaguest/gini/blob/master/gini.py
@@ -333,4 +339,27 @@ def plot_qtable_hist(qtab,filename,xcol,ycol,valcol,title):
             ax[i//len(xs)][i%len(xs)].set_title(xs[i%len(xs)])
     fig.tight_layout()
     fig.savefig(filename,format='pdf')
+
+def plot_qtable_heat(qtab,filename,xcol,ycol,valcol):
+    xs=qtab[xcol].unique()
+    ys=qtab[ycol].unique()
+    for i,(c,v) in expandgrid({'c':ys,'v':xs}).iterrows():
+        q_state=qtab[(qtab[xcol]==v) & (qtab[ycol]==c)] # subset with current state
+        hist=pd.DataFrame()
+        for r in q_state["repetition"].unique():
+            tmp=q_state[q_state["repetition"]==r]
+            tmp=tmp[valcol].value_counts().sort_index()
+            assert(sum(tmp)==q_state["N"].max()) # the number of rows corresponds to pop size * repetitions
+            tmp/=sum(tmp)         # normalize
+            tmp=pd.DataFrame(tmp)
+            tmp=tmp.rename(columns={valcol:r})
+            if hist.empty:
+                hist=tmp
+            else:
+                hist=pd.merge(hist,tmp,left_index=True,right_index=True,how="outer")
+        nbins=10
+        bins=np.append(np.arange(hist.index.min(),hist.index.max(),(hist.index.max()-hist.index.min())/nbins),[hist.index.max()])
+        binlabs=[np.around(np.mean([l,h]),decimals=2) for l,h in pairwise(bins)]
+        hist=hist.groupby(pd.cut(hist.index,bins,include_lowest=True)).mean() # bin the index
+        plot_hmap(hist,"Freq of Qvals, value: "+str(v)+" cost: "+str(c),filename+"_v"+str(v)+"_c"+str(c)+".pdf","./",xlab="Rep",ylab="Qvalue",ticks=[hist.columns,np.array(range(len(bins)))-0.5],ticklabs=[hist.columns,bins],inverty=False)
 

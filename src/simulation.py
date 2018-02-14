@@ -144,6 +144,7 @@ def run_experiment(test,conf):
             ## compute histograms
             q_exp=subset_df(qtables,p) # subset with current experimental conditions
             plot_qtable_hist(q_exp,"./plots/"+str(test)+"_qhist_"+pdesc+".pdf","state_val","state_cost","prob",str(dict(p)))
+            plot_qtable_heat(q_exp,"./plots/heatmaps/"+str(test)+"_qheat_"+pdesc,"state_val","state_cost","prob")
 
 if __name__ == '__main__':
     tests={"qlearn":{"T":1000,"reps":3,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicQlearn,"rew_fct":RewardLogicUniform}}#
