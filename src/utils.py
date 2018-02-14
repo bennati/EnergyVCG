@@ -10,6 +10,12 @@ def boltzmann(qtable,temp):
     assert(sum(probs)==1)
     return np.cumsum(probs)
 
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return list(zip(a, b))
+
 def gini(array):
     """Calculate the Gini coefficient of a numpy array.
     https://github.com/oliviaguest/gini/blob/master/gini.py
