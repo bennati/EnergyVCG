@@ -80,7 +80,7 @@ class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
     Returns a constant decision
     """
     def get_decision(self,perceptions):
-        self.last_actions=[{"contribution":a["value"],"cost":a["cost"],"agentID":i,"contributed":True,"timestep":a["timestep"],"threshold":a["threshold"]} for i,a in enumerate(perceptions)]
+        self.last_actions=[{"contribution":a["value"],"cost":a["cost"],"agentID":a["agentID"],"contributed":True,"timestep":a["timestep"],"threshold":a["threshold"]} for a in perceptions]
         return self.last_actions
 
 class DecisionLogicSupervisorProbabilistic(BaseDecisionLogic):

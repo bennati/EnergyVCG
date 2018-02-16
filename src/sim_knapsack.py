@@ -78,8 +78,6 @@ class DecisionLogicSupervisorKnapsack(BaseDecisionLogic):
     Optimize the knapsack problem
     """
     def get_decision(self,perceptions):
-        for i,p in enumerate(perceptions):
-            p.update({"agentID":i})
         W=max([a["threshold"] for a in perceptions]) # public good threshold
         items=[(a["agentID"],a["cost"],a["value"]) for a in perceptions] # values to maximize and contributions to achieve
         maxcost=max([c for i,c,v in items])
@@ -102,8 +100,9 @@ class DecisionLogicSupervisorKnapsack(BaseDecisionLogic):
         assert(sum([v for i,c,v in vals])>=W)           # successful
         # find what agents contribute
         idx=[i for i,c,v in vals] # take first occurrence, it works even if two agents have the same cost and value
-        decisions=[True if i in idx else False for i in range(len(perceptions))]
+        decisions=[True if p["agentID"] in idx else False for p in perceptions]
+        # debug
         assert(sum(decisions)==len(idx))
-        assert(sum([perceptions[i]["value"] for i in idx])>=W)
+        assert(sum([p["value"] for p in perceptions if p["agentID"] in idx])>=W)
         self.last_actions=[{"contribution":(a["value"] if d else np.nan),"cost":a["cost"],"agentID":a["agentID"],"contributed":d,"timestep":a["timestep"],"threshold":a["threshold"]} for a,d in zip(perceptions,decisions)]
         return self.last_actions
