@@ -39,8 +39,12 @@ def compute_contrib_hist(decisions,varnames):
     return ret
 
 def subset_df(df,conditions):
+    if conditions.empty:
+        ret=df
+    else:
     ret=df[functools.reduce(np.logical_and,[(df[k]==v) for k,v in zip(conditions.index,conditions)])] # select only a subset of the table matching the parameters
-    return ret.reset_index()
+        ret.reset_index()
+    return ret
 
 def run_experiment(test,conf):
     print("starting "+str(test))
@@ -79,6 +83,7 @@ def run_experiment(test,conf):
     # compute statistics for all tables in log file
     varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
     ### prepare tables ###
+    if varnames:
     stats_gini_contribs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
     contrib_hist=compute_contrib_hist(stats_gini_contribs,varnames)
     contrib_hist.to_csv("./data/"+str(test)+"/contrib_hist.csv.gz",index=False,compression='gzip')
@@ -88,6 +93,7 @@ def run_experiment(test,conf):
     stats_gini_contribs=stats_gini_contribs.groupby(varnames+["repetition"],as_index=False).agg({"contributed":gini,"contribution":gini}) # compute gini coefficient across agents
     stats_gini_contribs=stats_gini_contribs.rename(columns={"contributed":"Contributors","contribution":"Values"})
     stats_gini_contribs.to_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz",index=False,compression='gzip')
+        stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
     #stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
     ## compute stats qtables
     if qlearning:
@@ -120,12 +126,11 @@ def run_experiment(test,conf):
         stats_decs=get_stats(log_tot,"decisions",idx=[varname],cols=["contribution","cost","contributed"])
         plot_trend(stats_decs,varname,"./plots/"+str(test)+"/decisions_"+str(varname)+".pdf")
         stats_eval=get_stats(log_tot,"evaluation",idx=[varname],cols=["gini","cost","efficiency","social_welfare","success","num_contrib"])
-        plot_measures(stats_eval,varname,"./plots/"+str(test)+"/eval"+str(varname)+".pdf")
+        plot_measures(stats_eval,varname,"./plots/"+str(test)+"/eval_"+str(varname)+".pdf")
         stats_contrib_hist=compute_stats(contrib_hist,idx=[varname,"value"],columns=["cnt"])
         plot_trend(stats_contrib_hist,"value","./plots/"+str(test)+"/contrib_hist_"+str(varname)+".pdf",yname=varname)
 
     ### now compute statistics for each parameter configuration, aggregating only on repetitions ###
-    stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
     stats_t=get_stats(log_tot,"evaluation",idx=["timestep"]+varnames,cols=["gini","cost","efficiency","social_welfare","success","num_contrib"])
     for idx,p in expandgrid({k:conf["params"][k] for k in varnames}).iterrows():
         pdesc="_".join([str(k)+str(v) for k,v in dict(p).items()])
