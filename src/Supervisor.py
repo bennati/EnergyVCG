@@ -164,10 +164,10 @@ class BaseSupervisor(Model):
             perceptions=self.current_state["perception"]
         # debug
         tmp=pd.merge(pd.DataFrame(perceptions),pd.DataFrame(decisions),on=["agentID"])
-        tmp["value"]=[(r[1]["value"] if r[1]["contributed"]==1 else np.nan) for r in tmp.iterrows()]
-        # print(tmp)
-        assert(((tmp["value"] == tmp["contribution"]) | (np.isnan(tmp["value"]) & np.isnan(tmp["contribution"]))).all())
-        assert(all(tmp["cost_x"]==tmp["cost_y"]))
+        # tmp["value"]=[(r[1]["value"] if r[1]["contributed"]==1 else np.nan) for r in tmp.iterrows()]
+        assert(((tmp["value"] == tmp["contribution"]) | np.isnan(tmp["contribution"])).all())
+        assert(((tmp["cost_x"] == tmp["cost_y"]) | np.isnan(tmp["cost_y"])).all())
+            # assert(all([p["cost"]==d["cost"] for p,d in zip(self.current_state["perception"],decisions)]))
         if rewards is None or len(rewards)!=self.N:
             if rewards is not None and len(rewards)!=self.N:
                 print("Warning: invalid rewards provided, computing new ones")
