@@ -4,28 +4,6 @@ from RewardLogic import BaseRewardLogic
 from MeasurementGen import BaseMeasurementGen
 from utils import *
 
-class RewardLogicFull(BaseRewardLogic):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.benefit=5
-        self.damage=-10
-
-    def get_rewards(self,decisions):
-        """
-        Almost full contribution is required
-        """
-        percs=np.sum([p["value"] for p in self.model.current_state["perception"]])
-        thresh=np.random.uniform(percs*0.8,percs) # almost full contrib
-        contribs=np.sum([d["contribution"] for d in decisions])
-        outcome=success(thresh,contribs)
-        if outcome==1:
-            costs=np.array([d["cost"] for d in decisions])
-            ret=-costs+self.benefit
-            ret=[{"reward":r} for r in ret]
-        else:
-            ret=[{"reward":self.damage}]*self.model.N
-        return ret
-
 class RewardLogicUniform(BaseRewardLogic):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,7 +27,7 @@ class RewardLogicUniform(BaseRewardLogic):
         else:
             # print("unsuccessful")
             ret=-costs+self.damage
-        ret=[{"reward":r} for r in ret]
+        ret=[{"agentID": d["agentID"],"reward":r} for r,d in zip(ret,decisions)]
         return ret
 
 class DecisionLogicEmpty(BaseDecisionLogic):

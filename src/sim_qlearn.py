@@ -7,32 +7,6 @@ import numpy as np
 import math
 import pandas as pd
 
-class RewardLogicUniformQ(BaseRewardLogic):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.benefit=10
-        self.damage=-10
-
-    def get_rewards(self,decisions):
-        """
-        The threshold is randomly generated around the average contribution
-        """
-        thresh=max([p["threshold"] for p in decisions])
-        contribs=np.sum([d["contribution"] for d in decisions if d["contributed"]])
-        # if thresh<=contribs:
-        #     print("success "+str(thresh)+" "+str(contribs))
-        # else:
-        #     print("insuccess "+str(thresh)+" "+str(contribs))
-        outcome=success(thresh,contribs)
-        costs=np.array([(d["cost"] if d["contributed"] else 0) for d in decisions])
-        if outcome==1:
-            ret=-costs+self.benefit
-        else:
-            # print("unsuccessful")
-            ret=-costs+self.damage
-        ret=[{"reward":r} for r in ret]
-        return ret
-
 class DecisionLogicQlearn(BaseDecisionLogic):
     def __init__(self,model,wl=2,gamma = 0.5,alpha = 0.5,tmax=5):
         super().__init__(model)
@@ -97,6 +71,7 @@ class DecisionLogicQlearn(BaseDecisionLogic):
         return self.last_actions
 
     def feedback(self,perceptions,reward):
+        assert(reward["agentID"]==self.model.unique_id)
         current=self.get_current_state()
         # update history
         if len(self.history)>0:
