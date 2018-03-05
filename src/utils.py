@@ -20,6 +20,9 @@ def boltzmann(qtable,temp):
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    if len(iterable)==1:
+        return [[iterable[0],iterable[0]]]
+    else:
     a, b = itertools.tee(iterable)
     next(b, None)
     return list(zip(a, b))
@@ -353,6 +356,7 @@ def plot_qtable_heat(qtab,filename,xcol,ycol,valcol):
         nbins=10
         bins=np.append(np.arange(hist.index.min(),hist.index.max(),(hist.index.max()-hist.index.min())/nbins),[hist.index.max()])
         binlabs=[np.around(np.mean([l,h]),decimals=2) for l,h in pairwise(bins)]
+        if len(bins)>1:
         hist=hist.groupby(pd.cut(hist.index,bins,include_lowest=True)).mean() # bin the index
         plot_hmap(hist,"Freq of Qvals, value: "+str(v)+" cost: "+str(c),filename+"_v"+str(v)+"_c"+str(c)+".pdf","./",xlab="Rep",ylab="Qvalue",ticks=[hist.columns,np.array(range(len(bins)))-0.5],ticklabs=[hist.columns,bins],inverty=False)
 

@@ -35,7 +35,7 @@ def compute_contrib_hist(decisions,varnames):
     ret=ret.transform(lambda x: [[k,v/sum([b for a,b in x])] for k,v in x]) # normalize by population size
     ## for each parameter value returns a dataframe where the index (level 0, level1 is a counter) is N (the number of times an agent contributes) and each value counts the number of agents that contributed N times in a given repetition (it lists the outcomes of all repetitions, disaggregated, so that they can be aggregated with other parameter settings later on)
     ret=pd.DataFrame(ret).groupby(varnames,as_index=True).apply(lambda x: pd.DataFrame(np.concatenate(np.asarray(x[0])),columns=["value","cnt"]).groupby(["value"],as_index=True).apply(lambda x: pd.DataFrame(pd.concat([x["cnt"]]))))
-    ret=ret.reset_index(level=[0,1,2]).reset_index(level=0,drop=True) # convert indexes to columns
+    ret=ret.reset_index(level=list(range(len(varnames)+1))).reset_index(level=0,drop=True) # convert indexes to columns
     return ret
 
 def run_experiment(test,conf):
