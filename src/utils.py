@@ -12,9 +12,12 @@ def boltzmann(qtable,temp):
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return list(zip(a, b))
+    if len(iterable)==1:
+        return [[iterable[0],iterable[0]]]
+    else:
+        a, b = itertools.tee(iterable)
+        next(b, None)
+        return list(zip(a, b))
 
 def gini(array):
     """Calculate the Gini coefficient of a numpy array.
