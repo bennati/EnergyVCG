@@ -99,7 +99,7 @@ def cost(costs):
     costs: a list of costs, one for each agent
     Returns: the average cost
     """
-    return np.mean(costs)
+    return np.nanmean(costs)
 
 def social_welfare(costs,rewards):
     """
@@ -199,7 +199,7 @@ def plot_trend(df,xname,filename,trends=None,yname=None):
 def plot_measures(df,xname,filename,trends=None):
     fig=plt.figure()
     for measures,ylim,i in [[["efficiency","success","gini"],[0,1],0]
-                            ,[["cost","social_welfare","num_contrib"],None,1]]:
+                            ,[["cost_pop","social_welfare","num_contrib"],None,1]]:
         ax = fig.add_subplot(121+i)
         x=df[xname]
         ax.set_xlabel(xname)
