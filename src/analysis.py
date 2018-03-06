@@ -17,6 +17,7 @@ decs_list=[]
 eval_list=[]
 ### generate individual plots
 for test in tests:
+    print(test)
     if not os.path.exists("plots/"+str(test)):
         os.makedirs("plots/"+str(test))
     res_decs=pd.read_csv("./data/"+str(test)+"/decisions.csv.gz")
@@ -36,7 +37,7 @@ for test in tests:
     varnames=[c for c in contrib_hist.columns if c not in ["value","cnt"]]
     varvalues=expandgrid({v:contrib_hist[v].unique() for v in varnames})
     stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
-    stats_evalt=compute_stats(res_eval,idx=["timestep"],columns=["gini","cost","efficiency","social_welfare","success","num_contrib"])
+    stats_evalt=compute_stats(res_eval,idx=["timestep"],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
     plot_measures(stats_evalt,"timestep","./plots/"+str(test)+"/eval_"+str("time")+".pdf")
     ### now move to computing statistics that aggregate on one of the parameters ###
     for varname in varnames:
@@ -48,13 +49,13 @@ for test in tests:
         plot_trend(stats_percs,varname,"./plots/"+str(test)+"/perceptions_"+str(varname)+".pdf")
         stats_decs=compute_stats(res_decs,idx=[varname],columns=["contribution","cost","cost_pop","contributed"])
         plot_trend(stats_decs,varname,"./plots/"+str(test)+"/decisions_"+str(varname)+".pdf")
-        stats_eval=compute_stats(res_eval,idx=[varname],columns=["gini","cost","efficiency","social_welfare","success","num_contrib"])
+        stats_eval=compute_stats(res_eval,idx=[varname],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
         plot_measures(stats_eval,varname,"./plots/"+str(test)+"/eval_"+str(varname)+".pdf")
         stats_contrib_hist=compute_stats(contrib_hist,idx=[varname,"value"],columns=["cnt"])
         plot_trend(stats_contrib_hist,"value","./plots/"+str(test)+"/contrib_hist_"+str(varname)+".pdf",yname=varname)
 
     ### now compute statistics for each parameter configuration, aggregating only on repetitions ###
-    stats_t=compute_stats(res_eval,idx=["timestep"]+varnames,columns=["gini","cost","efficiency","social_welfare","success","num_contrib"])
+    stats_t=compute_stats(res_eval,idx=["timestep"]+varnames,columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
     for idx,p in varvalues.iterrows():
         pdesc="_".join([str(k)+str(v) for k,v in dict(p).items()])
         # temporal evolution of measures
@@ -101,9 +102,9 @@ for varname in varnames:
     plot_trend(stats_rews,varname,"./plots/rewards_"+str(varname)+".pdf",yname="algorithm",trends=["reward"])
     # stats_percs=compute_stats([perc_list],idx=[varname,"algorithm"],columns=["value","cost"])
     # plot_trend(stats_percs,varname,"./plots/"+str(test)+"/perceptions_"+str(varname)+".pdf",yname="algorithm")
-    stats_decs=compute_stats([decs_list],idx=[varname,"algorithm"],columns=["contribution","cost","cost_pop","contributed"])
+    stats_decs=compute_stats([decs_list],idx=[varname,"algorithm"],columns=["contribution","cost","cost_pop","contributed","privacy"])
     plot_trend(stats_decs,varname,"./plots/costs_volunteers_"+str(varname)+".pdf",yname="algorithm",trends=["cost"])
     plot_trend(stats_decs,varname,"./plots/costs_global_"+str(varname)+".pdf",yname="algorithm",trends=["cost_pop"])
-    stats_eval=compute_stats([eval_list],idx=[varname,"algorithm"],columns=["gini","cost","efficiency","social_welfare","success","num_contrib"])
+    stats_eval=compute_stats([eval_list],idx=[varname,"algorithm"],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
     plot_trend(stats_eval,varname,"./plots/gini_"+str(varname)+".pdf",yname="algorithm",trends=["gini"])
     plot_trend(stats_eval,varname,"./plots/success_"+str(varname)+".pdf",yname="algorithm",trends=["success"])
