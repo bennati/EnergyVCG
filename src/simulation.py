@@ -51,8 +51,8 @@ def run_experiment(test,conf):
             params=p.to_dict()
             params.update({"repetition":r})
         f=functools.partial(conf["meas_fct"],**params)
-            model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
-            model.run(conf["T"],params=params)
+            model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent,T=conf["T"])
+            model.run(params=params)
         log_tot=log_tot+model.log # concatenate lists
             try:
                 tab=pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in model.schedule.agents])

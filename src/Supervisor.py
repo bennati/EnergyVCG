@@ -11,7 +11,7 @@ from utils import *
 
 class BaseSupervisor(Model):
 
-    def __init__(self,N,measurement_fct=BaseMeasurementGen,decision_fct=BaseDecisionLogic,agent_decision_fct=BaseDecisionLogic,reward_fct=BaseRewardLogic,evaluation_fct=BaseEvaluationLogic,agent_type=BaseAgent):
+    def __init__(self,N,measurement_fct=BaseMeasurementGen,decision_fct=BaseDecisionLogic,agent_decision_fct=BaseDecisionLogic,reward_fct=BaseRewardLogic,evaluation_fct=BaseEvaluationLogic,agent_type=BaseAgent,T=0):
         super().__init__()
         # parameters
         self.measurement_fct=measurement_fct()
@@ -22,6 +22,7 @@ class BaseSupervisor(Model):
         self.agent_type=agent_type
         self.log=[]
         self.N=int(N)
+        self.T=int(T)
         if self.N<=0:
             raise AssertionError("Initializing empty population")
         self.schedule = RandomActivation(self)
@@ -181,13 +182,15 @@ class BaseSupervisor(Model):
         return rewards
 
 
-    def run(self,T,params={}):
+    def run(self,T=None,params={}):
         """
         Executes the simulation
 
         Args:
         T: the simulation length
         """
+        if T is None:
+            T=self.T
         t=0
         while(t<T):
             self.step()
