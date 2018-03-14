@@ -49,9 +49,9 @@ def run_experiment(test,conf):
         print("repetition: "+str(r))
         for idx,p in expandgrid(conf["params"]).iterrows():
             params=p.to_dict()
-            params.update({"repetition":r})
+            params.update({"repetition":r,"T":conf["T"]})
         f=functools.partial(conf["meas_fct"],**params)
-            model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent,T=conf["T"])
+            model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
             model.run(params=params)
         log_tot=log_tot+model.log # concatenate lists
             try:

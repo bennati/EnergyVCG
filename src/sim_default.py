@@ -77,11 +77,20 @@ class MeasurementGenUniform(BaseMeasurementGen):
         self.n2=kwargs["n2"]
         assert(self.n1>=0)
         assert(self.n2>self.n1)
+        self.n=kwargs["N"]
+        self.t=kwargs["T"]
+        if self.t is None:
+            print("setting t to default")
+            self.t=1000
+
 
     def get_measurements(self,population,timestep):
         """
         Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
         """
+        if timestep>self.t:
+            return None
+        else:
         vals=[np.random.randint(max(1,self.n1),self.n2) for _ in population]
         costs=[np.random.randint(max(1,self.n1),self.n2) for _ in population]
         # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))

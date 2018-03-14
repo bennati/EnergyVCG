@@ -21,8 +21,12 @@ class BaseSupervisor(Model):
         self.agent_decision_fct=agent_decision_fct # keep it a class as it will be instanciated in the agent init
         self.agent_type=agent_type
         self.log=[]
+        if self.measurement_fct.n!=int(N):
+            print("warning, setting N according to what provided by measurement fct")
+            self.N=self.measurement_fct.n
+        else:
         self.N=int(N)
-        self.T=int(T)
+        # self.T=int(T)
         if self.N<=0:
             raise AssertionError("Initializing empty population")
         self.schedule = RandomActivation(self)
@@ -115,6 +119,9 @@ class BaseSupervisor(Model):
         A list of dictionaries containing the perception for the current timestep
         """
         measurements=self.measurements(timestep) # obtain new measurements
+        if measurements is None:
+            return None
+        else:
         pdict=[]
         for i,m in zip(range(len(measurements)),measurements):
             d=m.copy()
@@ -182,20 +189,16 @@ class BaseSupervisor(Model):
         return rewards
 
 
-    def run(self,T=None,params={}):
+    def run(self,params={}):
         """
         Executes the simulation
 
         Args:
         T: the simulation length
         """
-        if T is None:
-            T=self.T
-        t=0
-        while(t<T):
+        while(self.current_state["perception"] is not None):
             self.step()
             self.get_log(params=params)
-            t+=1
 
     def evaluate(self,decisions,rewards=None,threshold=None):
         """
@@ -241,6 +244,10 @@ class BaseSupervisor(Model):
         self.current_state.update({"timestep":self.schedule.steps})
         perception=self.perception_dict(self.schedule.steps) # generate measurements
         self.current_state.update({"perception":perception}) # generate measurements
+        if perception is None:
+            print("no more data input, terminating at time "+str(self.schedule.steps))
+            return None
+        else:
         thresh=max([p["threshold"] for p in perception])
         self.perception()               # communicate them to agents
         self.schedule.step()    # agents decide
@@ -248,4 +255,5 @@ class BaseSupervisor(Model):
         self.current_state.update({"decisions":decisions}) # collect decisions
         self.current_state.update({"reward":self.feedback(decisions)})
         self.current_state.update({"evaluation":self.evaluate(decisions,threshold=thresh)})
+            return 1
         #self.__log()
