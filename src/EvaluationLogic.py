@@ -16,7 +16,7 @@ class BaseEvaluationLogic():
         Returns:
         A list of dictionaries containing the evaluation of the population behavior
         """
-        contributions,values,costs=zip(*[(d["contributed"],d["contribution"],d["cost"]) for d in decisions])
+        contributions,values,costs,privs=zip(*[(d["contributed"],d["contribution"],d["cost"],d["privacy"]) for d in decisions])
         cost_pop=[(0 if np.isnan(i) else i)  for i in costs]
         if threshold is None:
             threshold=max([p["threshold"] for p in decisions])
@@ -26,6 +26,7 @@ class BaseEvaluationLogic():
                  "gini":gini(values),
                 "cost":cost(costs),
                  "cost_pop":cost(cost_pop),
+                 "privacy":sum(privs),
                  "social_welfare":social_welfare(cost_pop,rews),
                 "efficiency":efficiency(threshold,np.nansum(values)),
                 "success":success(threshold,np.nansum(values)),
