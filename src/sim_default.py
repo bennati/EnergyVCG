@@ -50,7 +50,7 @@ class DecisionLogicSupervisorEmpty(BaseDecisionLogic):
         tmp1=pd.DataFrame(data={"action":decs,"agentID":idxs})
         tmp=pd.merge(pd.DataFrame(perceptions),tmp1,on=["agentID"])
         #print(decs)
-        self.last_actions=[{"contribution":(r[1]["value"] if r[1]["action"] else np.nan),"cost":(r[1]["cost"] if r[1]["action"] else np.nan),"agentID":r[1]["agentID"],"contributed":r[1]["action"],"timestep":r[1]["timestep"],"threshold":r[1]["threshold"]} for r in tmp.iterrows()]
+        self.last_actions=[{"contribution":(r[1]["value"] if r[1]["action"] else np.nan),"cost":(r[1]["cost"] if r[1]["action"] else np.nan),"privacy":(1 if r[1]["action"] else 0),"agentID":r[1]["agentID"],"contributed":r[1]["action"],"timestep":r[1]["timestep"],"threshold":r[1]["threshold"]} for r in tmp.iterrows()]
         return self.last_actions
 
 class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
@@ -58,7 +58,7 @@ class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
     Returns a constant decision
     """
     def get_decision(self,perceptions):
-        self.last_actions=[{"contribution":a["value"],"cost":a["cost"],"agentID":a["agentID"],"contributed":True,"timestep":a["timestep"],"threshold":a["threshold"]} for a in perceptions]
+        self.last_actions=[{"contribution":a["value"],"cost":a["cost"],"privacy":1,"agentID":a["agentID"],"contributed":True,"timestep":a["timestep"],"threshold":a["threshold"]} for a in perceptions]
         return self.last_actions
 
 class DecisionLogicSupervisorProbabilistic(BaseDecisionLogic):
