@@ -5,7 +5,8 @@ import os
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-#rcParams.update({'figure.autolayout': True})
+rcParams.update({'figure.autolayout': True})
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 import math
 
@@ -174,26 +175,46 @@ A data frame with columns 'X_mean', 'X_std' and 'X_ci' containing the statistics
         data_.drop("count_sum",1,inplace=True)
     return data_
 
-def plot_trend(df,xname,filename,trends=None,yname=None):
+def plot_trend(df,xname,filename,trends=None,yname=None,lstyles=['-','--',':','-.'],colors=None,font_size=12,ylab=None,xlab=None):
     if trends is None:
         trends=[d[:-5] for d in df.columns if ("_mean" in d)]
     fig,ax=plt.subplots()
-    ax.set_xlabel(xname)
+    if len(trends)>len(lstyles):
+        lstyles=['-']*len(trends)
+    else:
+        lstyles=lstyles[:len(trends)]
+    lineArtists=[plt.Line2D((0,1),(0,0), color='k', marker='', linestyle=sty) for sty in lstyles]
+    ax.set_xlabel(xlab or xname,fontsize=font_size)
+    ax.set_ylabel(ylab or yname,fontsize=font_size)
     if yname is None:
         data=[(df,None)]
     else:
         data=[(df[df[yname]==i],i) for i in df[yname].unique()]
+    if colors is None:
+        cmap = plt.get_cmap('cubehelix_r')
+        colors=[cmap(float(i+1)/(len(data)+1)) for i in range(len(data))]
+    colorArtists = [plt.Line2D((0,1),(0,0), color=c) for c in colors]
     #fig.suptitle(title)
-    #ax.set_ylabel(ylab or str(y))
     # if ylim:
     #     ax.set_ylim(ylim)
-    for d,l in data:
+    box = ax.get_position()
+    # if yname and len(yname)>1 and len(trends)>1:
+    #     # Shrink current axis's height by 10% on the bottom
+    ax.set_position([box.x0, box.y0,
+                     box.width, box.height * 1.1])
+    if yname and len(df[yname].unique())>1:
+        ax.add_artist(plt.legend(colorArtists,[l for d,l in data],loc='upper center', bbox_to_anchor=(0.5, 1.18),fancybox=True, shadow=True, ncol=len(data),fontsize=font_size))
+    if len(trends)>1:
+        ax.add_artist(plt.legend(lineArtists,trends,loc='upper center', bbox_to_anchor=(0.5, 1),fancybox=True, shadow=True, ncol=len(trends),fontsize=font_size))
+    for (d,l),c in zip(data,colors):
         x=d[xname]
-    for y in trends:
-            lab=(y if l is None else yname+"="+str(l))
-            ax.plot(x,d[y+"_mean"],label=lab)
-            ax.fill_between(x,np.asarray(d[y+"_mean"])-np.asarray(d[y+"_ci"]),np.asarray(d[y+"_mean"])+np.asarray(d[y+"_ci"]),alpha=0.2)
-    fig.legend()
+        for y,sty in zip(trends,lstyles):
+            lab=(y if l is None else y+"; "+yname+"="+str(l))
+            ax.plot(x,d[y+"_mean"],label=lab,linestyle=("--" if l=="Baseline" else "-"),color=c,linewidth=3)
+            ax.fill_between(x,np.asarray(d[y+"_mean"])-np.asarray(d[y+"_ci"]),np.asarray(d[y+"_mean"])+np.asarray(d[y+"_ci"]),alpha=0.2,linestyle=sty,facecolor=c,linewidth=3)
+    # plt.legend()
+    plt.setp(ax.xaxis.get_majorticklabels(),fontsize=font_size)
+    plt.setp(ax.yaxis.get_majorticklabels(),fontsize=font_size)
     fig.savefig(filename,format='pdf')
     plt.close(fig)
 
@@ -335,6 +356,7 @@ def plot_qtable_hist(qtab,filename,xcol,ycol,valcol,title):
             ax[i//len(xs)][i%len(xs)].set_title(xs[i%len(xs)])
     fig.tight_layout()
     fig.savefig(filename,format='pdf')
+    plt.close(fig)
 
 def plot_qtable_heat(qtab,filename,xcol,ycol,valcol):
     xs=qtab[xcol].unique()
@@ -345,7 +367,7 @@ def plot_qtable_heat(qtab,filename,xcol,ycol,valcol):
         for r in q_state["repetition"].unique():
             tmp=q_state[q_state["repetition"]==r]
             tmp=tmp[valcol].value_counts().sort_index()
-            assert(sum(tmp)==q_state["N"].max()) # the number of rows corresponds to pop size * repetitions
+            # assert(sum(tmp)==q_state["N"].max()) # the number of rows corresponds to pop size * repetitions
             tmp/=sum(tmp)         # normalize
             tmp=pd.DataFrame(tmp)
             tmp=tmp.rename(columns={valcol:r})
