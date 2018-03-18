@@ -43,7 +43,7 @@ def run_experiment(test,conf):
     if not os.path.exists("data/"+str(test)):
         os.makedirs("data/"+str(test))
     log_tot=[]
-    qtables=[]
+    qtab_list=[]
     qlearning=False
     for r in range(conf["reps"]):
         print("repetition: "+str(r))
@@ -54,6 +54,16 @@ def run_experiment(test,conf):
             model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
             model.run(params=params)
         log_tot=log_tot+model.log # concatenate lists
+            ## save results
+            res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
+            res_decs.to_csv("./data/"+str(test)+"/decisions.csv.gz",index=False,compression='gzip')
+            res_percs=pd.concat([pd.DataFrame(i["perception"]) for i in log_tot])
+            res_percs.to_csv("./data/"+str(test)+"/perceptions.csv.gz",index=False,compression='gzip')
+            res_rew=pd.concat([pd.DataFrame(i["reward"]) for i in log_tot])
+            res_rew.to_csv("./data/"+str(test)+"/rewards.csv.gz",index=False,compression='gzip')
+            res_eval=pd.concat([pd.DataFrame(i["evaluation"]) for i in log_tot])
+            res_eval.to_csv("./data/"+str(test)+"/evaluation.csv.gz",index=False,compression='gzip')
+            ## compute qtables
             try:
                 tab=pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in model.schedule.agents])
                 tab=tab.rename(columns={0:"no",1:"yes"})
@@ -66,21 +76,19 @@ def run_experiment(test,conf):
                 print(tab)
                 for k,v in dict(p).items():
                     tab[k]=v
-                qtables=qtables+[tab]
-                qlearning=True
+                qtab_list=qtab_list+[tab]
+                ## save to file
+                qtables=pd.concat(qtab_list)
+                 # transform the index to two separate columns
+                qtables["state_val"]=qtables["index"].transform(lambda x: x[0])
+                qtables["state_cost"]=qtables["index"].transform(lambda x: x[1])
+                qtables.drop("index",axis=1,inplace=True)
+                qtables["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtables.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
+                qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
             except:
                 print("Qtable not defined")
     # compute statistics for all tables in log file
     varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
-    ## save results
-    res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
-    res_decs.to_csv("./data/"+str(test)+"/decisions.csv.gz",index=False,compression='gzip')
-    res_percs=pd.concat([pd.DataFrame(i["perception"]) for i in log_tot])
-    res_percs.to_csv("./data/"+str(test)+"/perceptions.csv.gz",index=False,compression='gzip')
-    res_rew=pd.concat([pd.DataFrame(i["reward"]) for i in log_tot])
-    res_rew.to_csv("./data/"+str(test)+"/rewards.csv.gz",index=False,compression='gzip')
-    res_eval=pd.concat([pd.DataFrame(i["evaluation"]) for i in log_tot])
-    res_eval.to_csv("./data/"+str(test)+"/evaluation.csv.gz",index=False,compression='gzip')
     ### prepare tables ###
     if varnames:
         contrib_hist=compute_contrib_hist(res_decs,varnames)
@@ -93,15 +101,6 @@ def run_experiment(test,conf):
     stats_gini_contribs.to_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz",index=False,compression='gzip')
         stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
     #stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
-    ## compute stats qtables
-    if qlearning:
-        qtables=pd.concat(qtables)
-         # transform the index to two separate columns
-        qtables["state_val"]=qtables["index"].transform(lambda x: x[0])
-        qtables["state_cost"]=qtables["index"].transform(lambda x: x[1])
-        qtables.drop("index",axis=1,inplace=True)
-        qtables["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtables.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
-        qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
 
 if __name__ == '__main__':
     tests={"qlearn":{"T":1000,"reps":3,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicQlearn,"rew_fct":RewardLogicUniform}}#
