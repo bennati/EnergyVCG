@@ -1,4 +1,4 @@
-import functools
+from multiprocessing import Pool
 import itertools
 import pandas as pd
 import numpy as np
@@ -38,69 +38,123 @@ def compute_contrib_hist(decisions,varnames):
     ret=ret.reset_index(level=list(range(len(varnames)+1))).reset_index(level=0,drop=True) # convert indexes to columns
     return ret
 
+def compute_qtabs(n,p,model):
+    ret=None
+    try:
+        tab=pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in model.schedule.agents])
+        tab=tab.rename(columns={0:"no",1:"yes"})
+        tab2=pd.concat([a.decision_fct.get_qcount().assign(idx=a.unique_id) for a in model.schedule.agents]) # get the number of experiences for each state
+        tab["index"]=tab.index
+        tab2["index"]=tab2.index
+        tab=pd.merge(tab,tab2,right_on=["idx","index"],left_on=["idx","index"]) # merge along the index and agent id
+        tab["repetition"]=n
+        print(dict(p))
+        print(tab)
+        for k,v in dict(p).items():
+            tab[k]=v
+        ret=tab
+    except Exception as e:
+        print("Qtable not defined")
+        print(e)
+    return ret
+
+def body(n,conf):
+    np.random.seed(n)
+    print("repetition: "+str(n))
+    log=[]
+    qtab=[]
+    for idx,p in expandgrid(conf["params"]).iterrows():
+        params=p.to_dict()
+        print(params)
+        params.update({"repetition":n,"T":conf["T"]})
+        f=functools.partial(conf["meas_fct"],**params)
+        model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
+        model.run(params=params)
+        log=log+model.log
+        qtab=qtab+[compute_qtabs(n,p,model)]
+    return log,qtab
+
+def save_results(test,log_tot):
+    res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
+    res_decs.to_csv("./data/"+str(test)+"/decisions.csv.gz",index=False,compression='gzip')
+    res_percs=pd.concat([pd.DataFrame(i["perception"]) for i in log_tot])
+    res_percs.to_csv("./data/"+str(test)+"/perceptions.csv.gz",index=False,compression='gzip')
+    res_rew=pd.concat([pd.DataFrame(i["reward"]) for i in log_tot])
+    res_rew.to_csv("./data/"+str(test)+"/rewards.csv.gz",index=False,compression='gzip')
+    res_eval=pd.concat([pd.DataFrame(i["evaluation"]) for i in log_tot])
+    res_eval.to_csv("./data/"+str(test)+"/evaluation.csv.gz",index=False,compression='gzip')
+    return res_decs
+
+def save_qtabs(test,qtables):
+    if (qtables is not None) or any(qtables):            # if at least a table is not None
+        ## save to file
+        qtables=pd.concat(qtables)
+         # transform the index to two separate columns
+        qtables["state_val"]=qtables["index"].transform(lambda x: x[0])
+        qtables["state_cost"]=qtables["index"].transform(lambda x: x[1])
+        qtables.drop("index",axis=1,inplace=True)
+        qtables["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtables.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
+        qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
+
+def save_stats(test,conf,res_decs):
+    # compute statistics for all tables in log file
+    varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
+    ### prepare tables ###
+    if varnames:
+        contrib_hist=compute_contrib_hist(res_decs,varnames)
+        contrib_hist.to_csv("./data/"+str(test)+"/contrib_hist.csv.gz",index=False,compression='gzip')
+        #contrib_hist=pd.read_csv("./data/contrib_hist.csv.gz")
+        # aggregate over all agent ids and compute gini coefficients
+        stats_gini_contribs=res_decs.groupby(varnames+["agentID","repetition"],as_index=False).agg({"contributed":np.sum,"contribution":np.sum}) # sum up all contributions in each simulation (over all timesteps)
+        stats_gini_contribs=stats_gini_contribs.groupby(varnames+["repetition"],as_index=False).agg({"contributed":gini,"contribution":gini}) # compute gini coefficient across agents
+        stats_gini_contribs=stats_gini_contribs.rename(columns={"contributed":"Contributors","contribution":"Values"})
+        stats_gini_contribs.to_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz",index=False,compression='gzip')
+        # stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
+    #stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
+
+def run_experiment_par(test,conf):
+    print("starting "+str(test))
+    if not os.path.exists("data/"+str(test)):
+        os.makedirs("data/"+str(test))
+    part_fun=functools.partial(body,conf=conf)
+    if __name__ == '__main__':
+        print("starting processes")
+        pool=Pool()
+        ans=pool.map(part_fun,range(conf["reps"]))
+    else:
+        ans=map(part_fun,range(conf["reps"]))
+    log_tot,qtables=zip(*ans)
+    # flatten
+    log_tot=[i for sl in log_tot for i in sl]
+    qtables=[i for sl in qtables for i in sl]
+    ## save results
+    res_decs=save_results(test,log_tot)
+    save_qtabs(test,qtables)
+    save_stats(test,conf,res_decs)
+
 def run_experiment(test,conf):
     print("starting "+str(test))
     if not os.path.exists("data/"+str(test)):
         os.makedirs("data/"+str(test))
     log_tot=[]
     qtab_list=[]
-    qlearning=False
     for r in range(conf["reps"]):
         print("repetition: "+str(r))
         for idx,p in expandgrid(conf["params"]).iterrows():
             params=p.to_dict()
+            print(params)
             params.update({"repetition":r,"T":conf["T"]})
-        f=functools.partial(conf["meas_fct"],**params)
+            f=functools.partial(conf["meas_fct"],**params)
             model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
             model.run(params=params)
-        log_tot=log_tot+model.log # concatenate lists
-            ## save results
-            res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
-            res_decs.to_csv("./data/"+str(test)+"/decisions.csv.gz",index=False,compression='gzip')
-            res_percs=pd.concat([pd.DataFrame(i["perception"]) for i in log_tot])
-            res_percs.to_csv("./data/"+str(test)+"/perceptions.csv.gz",index=False,compression='gzip')
-            res_rew=pd.concat([pd.DataFrame(i["reward"]) for i in log_tot])
-            res_rew.to_csv("./data/"+str(test)+"/rewards.csv.gz",index=False,compression='gzip')
-            res_eval=pd.concat([pd.DataFrame(i["evaluation"]) for i in log_tot])
-            res_eval.to_csv("./data/"+str(test)+"/evaluation.csv.gz",index=False,compression='gzip')
+            log_tot=log_tot+model.log # concatenate lists
+            ## save intermediate results
+            res_decs=save_results(test,log_tot)
             ## compute qtables
-            try:
-                tab=pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in model.schedule.agents])
-                tab=tab.rename(columns={0:"no",1:"yes"})
-                tab2=pd.concat([a.decision_fct.get_qcount().assign(idx=a.unique_id) for a in model.schedule.agents]) # get the number of experiences for each state
-                tab["index"]=tab.index
-                tab2["index"]=tab2.index
-                tab=pd.merge(tab,tab2,right_on=["idx","index"],left_on=["idx","index"]) # merge along the index and agent id
-                tab["repetition"]=r
-                print(params)
-                print(tab)
-                for k,v in dict(p).items():
-                    tab[k]=v
-                qtab_list=qtab_list+[tab]
-                ## save to file
-                qtables=pd.concat(qtab_list)
-                 # transform the index to two separate columns
-                qtables["state_val"]=qtables["index"].transform(lambda x: x[0])
-                qtables["state_cost"]=qtables["index"].transform(lambda x: x[1])
-                qtables.drop("index",axis=1,inplace=True)
-                qtables["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtables.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
-                qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
-            except:
-                print("Qtable not defined")
+            qtab_list=qtab_list+[compute_qtabs(r,p,model)]
+            save_qtabs(test,qtab_list)
     # compute statistics for all tables in log file
-    varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
-    ### prepare tables ###
-    if varnames:
-        contrib_hist=compute_contrib_hist(res_decs,varnames)
-    contrib_hist.to_csv("./data/"+str(test)+"/contrib_hist.csv.gz",index=False,compression='gzip')
-    #contrib_hist=pd.read_csv("./data/contrib_hist.csv.gz")
-    # aggregate over all agent ids and compute gini coefficients
-        stats_gini_contribs=res_decs.groupby(varnames+["agentID","repetition"],as_index=False).agg({"contributed":np.sum,"contribution":np.sum}) # sum up all contributions in each simulation (over all timesteps)
-    stats_gini_contribs=stats_gini_contribs.groupby(varnames+["repetition"],as_index=False).agg({"contributed":gini,"contribution":gini}) # compute gini coefficient across agents
-    stats_gini_contribs=stats_gini_contribs.rename(columns={"contributed":"Contributors","contribution":"Values"})
-    stats_gini_contribs.to_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz",index=False,compression='gzip')
-        stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
-    #stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
+    save_stats(test,conf,res_decs)
 
 if __name__ == '__main__':
     tests={"qlearn":{"T":1000,"reps":3,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicQlearn,"rew_fct":RewardLogicUniform}}#
@@ -108,5 +162,5 @@ if __name__ == '__main__':
     # tests={"mandatory":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
     # tests={"knapsack":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorKnapsack,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
     for test,conf in tests.items():
-        run_experiment(test,conf)
+        run_experiment_par(test,conf)
     test,conf=list(tests.items())[0]

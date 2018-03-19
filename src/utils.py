@@ -10,6 +10,11 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 import math
 
+def renormalize(n, range1, range2):
+    delta1 = range1[1] - range1[0]
+    delta2 = range2[1] - range2[0]
+    return (delta2 * (n - range1[0]) / delta1) + range2[0]
+
 def boltzmann(qtable,temp):
     probs=[math.exp(q/temp) for q in qtable] # boltzmann equation
     if sum(probs)==0:
@@ -17,7 +22,7 @@ def boltzmann(qtable,temp):
     else:
         probs=[np.round(p/sum(probs),2) for p in probs] # normalize
     assert(sum(probs)==1)
-    return np.cumsum(probs)
+    return probs
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
