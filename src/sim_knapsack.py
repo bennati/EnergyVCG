@@ -104,5 +104,5 @@ class DecisionLogicSupervisorKnapsack(BaseDecisionLogic):
         # debug
         assert(sum(decisions)==len(idx))
         assert(sum([p["value"] for p in perceptions if p["agentID"] in idx])>=W)
-        self.last_actions=[{"contribution":(a["value"] if d else np.nan),"cost":(a["cost"] if d else np.nan),"privacy":1,"agentID":a["agentID"],"contributed":d,"timestep":a["timestep"],"threshold":a["threshold"]} for a,d in zip(perceptions,decisions)]
-        return self.last_actions
+        self.act=[{"contribution":(a["value"] if d else np.nan),"cost":(a["cost"] if d else np.nan),"privacy":1,"agentID":a["agentID"],"contributed":d,"timestep":a["timestep"],"threshold":a["threshold"]} for a,d in zip(perceptions,decisions)]
+        return self.act

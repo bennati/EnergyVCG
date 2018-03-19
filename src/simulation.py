@@ -5,8 +5,8 @@ import numpy as np
 from copy import copy
 import functools
 from DecisionLogic import BaseDecisionLogic
-from RewardLogic import BaseRewardLogic
-from MeasurementGen import BaseMeasurementGen
+from RewardLogic import *
+from MeasurementGen import *
 from sim_default import *
 from sim_qlearn import *
 from sim_aspiration import *
