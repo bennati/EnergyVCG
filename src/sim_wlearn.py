@@ -40,13 +40,15 @@ import numpy as np
 #     return (delta2 * (n - range1[0]) / delta1) + range2[0]
 
 class DecisionLogicWlearn(BaseDecisionLogic):
-    def __init__(self,model,gamma = 0.0,alpha = 0.5,tmax=5):
+    def __init__(self,model,gamma = 0.0,alpha = 0.5,tmax=5,training=False):
         super().__init__(model)
         possible_values=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
         possible_costs=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
         self.states=list(itertools.product(possible_values,possible_costs)) # all possible states
         self.actions=[0,1]
         self.qlearner=Qlearner(self.states,self.actions,gamma=gamma, alpha=alpha,tmax=tmax)
+        if training:
+            self.qlearner.train()   # pretraining
         self.wlearner=Wlearner(self.states,gamma=gamma, alpha=alpha)
         self.qlearner_gini=Qlearner(self.states,self.actions,gamma=gamma, alpha=alpha,tmax=tmax)
         self.wlearner_gini=Wlearner(self.states,gamma=gamma, alpha=alpha)

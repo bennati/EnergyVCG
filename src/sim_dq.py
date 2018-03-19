@@ -53,7 +53,7 @@ tf.set_random_seed(1)
 
 # Deep Q Network off-policy
 class DecisionLogicDQ(BaseDecisionLogic):
-    def __init__(self,model,alpha=0.01,gamma=0.0):
+    def __init__(self,model,alpha=0.01,gamma=0.0,training=False):
         super().__init__(model)
         possible_values=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
         possible_costs=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
@@ -61,6 +61,8 @@ class DecisionLogicDQ(BaseDecisionLogic):
         self.actions=[0,1]
         self.act=1
         self.init_(self.states,self.actions,gamma=gamma,alpha=alpha)
+        if training:
+            self.train()
 
     def init_(self,
               states,
@@ -110,7 +112,6 @@ class DecisionLogicDQ(BaseDecisionLogic):
 
             self.sess.run(tf.global_variables_initializer())
         self.cost_his = []
-        self.train()
 
     def _build_net(self):
         # ------------------ build evaluate_net ------------------

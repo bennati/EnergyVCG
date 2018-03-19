@@ -7,7 +7,7 @@ import math
 import pandas as pd
 
 class DecisionLogicQlearn(BaseDecisionLogic):
-    def __init__(self,model,gamma = 0.5,alpha = 0.5,tmax=5):
+    def __init__(self,model,gamma = 0.5,alpha = 0.5,tmax=5,training=False):
         super().__init__(model)
         possible_values=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
         possible_costs=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
@@ -15,7 +15,8 @@ class DecisionLogicQlearn(BaseDecisionLogic):
         self.actions=[0,1]
         self.qlearner=Qlearner(self.states,self.actions,gamma=gamma, alpha=alpha,tmax=tmax)
         self.act=1
-        # self.qlearner.train()   # pretraining
+        if training:
+            self.qlearner.train()   # pretraining
 
     def get_current_state(self):
         ret=(self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])
