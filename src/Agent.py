@@ -55,7 +55,7 @@ class BaseAgent(Agent):
         self.__log(timestep)
 
     def get_decision(self):
-        return self.decision_fct.last_actions
+        return self.decision_fct.act
 
     def decisions(self,perceptions=None):
         """
