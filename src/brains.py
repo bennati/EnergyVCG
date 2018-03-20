@@ -24,6 +24,8 @@ class Wlearner():
         return ret
 
     def learn(self,state, next_state, reward,optq_now,optq_future):
+        state=tuple(int(i) for i in state) # convert to int
+        next_state=tuple(int(i) for i in next_state) # convert to int
         # print([state,next_state,optq_now,optq_future])
         w = self.get_decision(state)
         new_w = w + self.alpha * (optq_now - reward - self.gamma * optq_future - w)
@@ -32,6 +34,7 @@ class Wlearner():
         self.w_count.loc[str(state)]+=1
 
     def get_decision(self,state):
+        state=tuple(int(i) for i in state) # convert to int
         return float(self.wvalues.loc[str(state)])
 
 class Qlearner():
@@ -66,6 +69,8 @@ class Qlearner():
         return ret
 
     def learn(self,state, next_state, action, reward):
+        state=tuple(int(i) for i in state) # convert to int
+        next_state=tuple(int(i) for i in next_state) # convert to int
         qsa = self.get_qvalue(state, action)
         new_q = qsa + self.alpha * (reward + self.gamma * self.get_qvalues(next_state).max() - qsa)
         self.qvalues.loc[str(state), action] = new_q
@@ -73,6 +78,7 @@ class Qlearner():
         self.q_count.loc[str(state)]+=1
 
     def get_decision(self,state):
+        state=tuple(int(i) for i in state) # convert to int
         self.temp=max(0.2,self.temp*0.95)
         probs=boltzmann(self.get_qvalues(state),self.temp)
         self.act = np.random.choice(self.actions,p=probs) # choose an action depending on the probabilities
@@ -80,14 +86,12 @@ class Qlearner():
         return self.act
 
     def get_qvalues(self,state):
+        state=tuple(int(i) for i in state) # convert to int
         return self.qvalues.loc[str(state)]
 
     def get_qvalue(self,state,action):
+        state=tuple(int(i) for i in state) # convert to int
         return self.qvalues.loc[str(state),action]
-
-np.random.seed(1)
-tf.set_random_seed(1)
-
 
 class DQlearner():
     def __init__(self,
@@ -305,3 +309,7 @@ class DQlearner():
 
     def get_qcount(self):
         return self.q_count
+
+    def get_qvalues(self,state):
+        qvals=self.sess.run(self.q_eval, feed_dict={self.s: [state]})[0]
+        return qvals

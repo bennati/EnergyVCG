@@ -68,6 +68,7 @@ class DecisionLogicDQ(BaseDecisionLogic):
     def get_decision(self, perception):
         current=self.get_current_state()
         self.act=self.dqlearner.get_decision(current)
+        assert(self.act in self.actions)
         return self.act
 
     def feedback(self,perceptions,reward,rew_type="reward"):

@@ -40,44 +40,19 @@ import numpy as np
 #     return (delta2 * (n - range1[0]) / delta1) + range2[0]
 
 class DecisionLogicWlearn(BaseDecisionLogic):
-    def __init__(self,model,gamma = 0.0,alpha = 0.5,tmax=5,training=False):
+    def __init__(self,model,gamma=0.0,training=False):
         super().__init__(model)
         possible_values=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
         possible_costs=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
         self.states=list(itertools.product(possible_values,possible_costs)) # all possible states
         self.actions=[0,1]
-        self.qlearner=Qlearner(self.states,self.actions,gamma=gamma, alpha=alpha,tmax=tmax)
+        self.qlearner=DQlearner(self.states,self.actions,gamma=gamma)
+        self.act=1
         if training:
             self.qlearner.train(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)   # pretraining
-        self.wlearner=Wlearner(self.states,gamma=gamma, alpha=alpha)
-        self.qlearner_gini=Qlearner(self.states,self.actions,gamma=gamma, alpha=alpha,tmax=tmax)
-        self.wlearner_gini=Wlearner(self.states,gamma=gamma, alpha=alpha)
-        self.act=1
-
-    def get_qtable(self):
-        # print("------------------------------")
-        # asd=self.qlearner.get_qtable()
-        # asd.rename(columns={0:"no",1:"yes"},inplace=True)
-        # asd1=self.wlearner.get_qtable()
-        # asd=pd.merge(asd,asd1,left_index=True,right_index=True)
-        # asd1=self.qlearner_gini.get_qtable()
-        # asd1.rename(columns={0:"no_gini",1:"yes_gini"},inplace=True)
-        # asd=pd.merge(asd,asd1,left_index=True,right_index=True)
-        # asd1=self.wlearner_gini.get_qtable()
-        # asd1.rename(columns={"w":"gini"},inplace=True)
-        # asd=pd.merge(asd,asd1,left_index=True,right_index=True)
-        # print(asd)
-        # ret=asd.apply(lambda x: pd.Series(data={1:(x["yes"] if x["w"]>x["gini"] else x["yes_gini"]),0:(x["no"] if x["w"]>x["gini"] else x["no_gini"])}),axis=1)
-        # return ret
-        return self.qlearner.get_qtable()
-
-    def get_qcount(self):
-        return self.qlearner.get_qcount()
-
-    def get_current_state(self):
-        ret=(self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])
-        assert(ret in self.states)
-        return ret
+        self.wlearner=Wlearner(self.states,gamma=gamma)
+        self.qlearner_gini=DQlearner(self.states,self.actions,gamma=gamma)
+        self.wlearner_gini=Wlearner(self.states,gamma=gamma)
 
     def get_decision(self,perceptions):
         # print("--------------------")
@@ -94,6 +69,7 @@ class DecisionLogicWlearn(BaseDecisionLogic):
         # self.winning_policy=0 #np.argmax([ws,ws_gini]) #TODO
         self.act=policies[self.winning_policy][0]
         # print("Ws are "+str([ws,ws_gini])+": winning policy is "+str(self.winning_policy))
+        self.act=self.qlearner.get_decision(current)
         assert(self.act in self.actions)
         return self.act
 
@@ -112,3 +88,26 @@ class DecisionLogicWlearn(BaseDecisionLogic):
             self.wlearner.learn(current,self.states[0],self.reward,self.qlearner.get_qvalues(current).max(),0)
         else:
             self.wlearner_gini.learn(current,self.states[0],gini_reward,self.qlearner.get_qvalues(current).max(),0)
+
+    def get_qtable(self):
+        print("------------------------------")
+        asd=self.qlearner.get_qtable()
+        asd.rename(columns={0:"no",1:"yes"},inplace=True)
+        asd1=self.wlearner.get_qtable()
+        asd=pd.merge(asd,asd1,left_index=True,right_index=True)
+        asd1=self.qlearner_gini.get_qtable()
+        asd1.rename(columns={0:"no_gini",1:"yes_gini"},inplace=True)
+        asd=pd.merge(asd,asd1,left_index=True,right_index=True)
+        asd1=self.wlearner_gini.get_qtable()
+        asd1.rename(columns={"w":"gini"},inplace=True)
+        asd=pd.merge(asd,asd1,left_index=True,right_index=True)
+        print(asd)
+        # ret=asd.apply(lambda x: pd.Series(data={1:(x["yes"] if x["w"]>x["gini"] else x["yes_gini"]),0:(x["no"] if x["w"]>x["gini"] else x["no_gini"])}),axis=1)
+        # return ret
+        return self.qlearner.get_qtable()
+
+    def get_qcount(self):
+        return self.qlearner.get_qcount()
+
+    def get_current_state(self):
+        return (self.model.current_state["perception"]["value_raw"],self.model.current_state["perception"]["cost_raw"])
