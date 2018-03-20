@@ -34,8 +34,8 @@ class DecisionLogicQlearn(BaseDecisionLogic):
         self.act=self.qlearner.get_decision(current)
         return self.act
 
-    def feedback(self,perceptions,reward):
+    def feedback(self,perceptions,reward,rew_type="reward"):
         assert(reward["agentID"]==self.model.unique_id)
         current=self.get_current_state()
-        self.reward=reward["reward"]
+        self.reward=reward[rew_type]
         self.qlearner.learn(current,self.states[0],self.act,self.reward)

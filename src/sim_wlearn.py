@@ -1,6 +1,6 @@
 from DecisionLogic import BaseDecisionLogic
 from utils import *
-from brains import Qlearner,Wlearner
+from brains import *
 import itertools
 import numpy as np
 
@@ -48,7 +48,7 @@ class DecisionLogicWlearn(BaseDecisionLogic):
         self.actions=[0,1]
         self.qlearner=Qlearner(self.states,self.actions,gamma=gamma, alpha=alpha,tmax=tmax)
         if training:
-            self.qlearner.train()   # pretraining
+            self.qlearner.train(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)   # pretraining
         self.wlearner=Wlearner(self.states,gamma=gamma, alpha=alpha)
         self.qlearner_gini=Qlearner(self.states,self.actions,gamma=gamma, alpha=alpha,tmax=tmax)
         self.wlearner_gini=Wlearner(self.states,gamma=gamma, alpha=alpha)

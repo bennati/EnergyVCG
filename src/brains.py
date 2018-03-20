@@ -24,9 +24,6 @@ class Wlearner():
         return ret
 
     def learn(self,state, next_state, reward,optq_now,optq_future):
-        """
-        https://gist.github.com/kastnerkyle/d127197dcfdd8fb888c2
-        """
         # print([state,next_state,optq_now,optq_future])
         w = self.get_decision(state)
         new_w = w + self.alpha * (optq_now - reward - self.gamma * optq_future - w)
@@ -51,7 +48,7 @@ class Qlearner():
         self.qvalues=pd.DataFrame(data={a:0 for a in self.actions},index=[str(s) for s in states])
         self.q_count=pd.DataFrame(data={"num":0},index=[str(s) for s in states])
 
-    def train(self):
+    def train(self,low=0,high=0):
         """
         pretrain the logic to contribute
         """
@@ -92,25 +89,21 @@ np.random.seed(1)
 tf.set_random_seed(1)
 
 
-# Deep Q Network off-policy
 class DQlearner():
-    def __init__(
-            self,
-            states,
-            actions,
-            n_features=2,
-            alpha=0.01,
-            gamma=0.0,
-            e_greedy=0.9,
-            replace_target_iter=300,
-            memory_size=500,
-            batch_size=1,
-            e_greedy_increment=None,
-            output_graph=False,
-    ):
+    def __init__(self,
+              states,
+              actions,
+              n_features=2,
+              alpha=0.01,
+              gamma=0.0,
+              e_greedy=0.9,
+              replace_target_iter=300,
+              memory_size=500,
+              batch_size=1,
+              e_greedy_increment=None,
+              output_graph=False):
         self.q_count=pd.DataFrame(data={"num":0},index=states)
-        self.actions=actions
-        self.n_actions = len(self.actions)
+        self.n_actions = len(actions)
         self.act=0
         self.n_features = n_features
         self.lr = alpha
@@ -203,7 +196,17 @@ class DQlearner():
 
         self.memory_counter += 1
 
-    def get_decision(self, observation):
+    def train(self,low,high):
+        """
+        Pretrain the network to contribute
+        """
+        for _ in range(100):
+            v=np.random.uniform(low,high)
+            c=np.random.uniform(low,high)
+            self.learn((v,c),[0,0],0,0)
+            self.learn((v,c),[0,0],1,1) # contributing is better
+
+    def get_decision(self,observation):
         # to have batch dimension when feed into tf placeholder
         # observation = observation[np.newaxis, :]
         if np.random.uniform() < self.epsilon:
@@ -215,7 +218,8 @@ class DQlearner():
         return self.act
 
     def learn(self,state,next_state,action,reward):
-        self.store_transition(state,action,reward,next_state)        # check to replace target parameters
+        self.store_transition(state,action,reward,next_state)
+        # check to replace target parameters
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.sess.run(self.replace_target_op)
             # print('\ntarget_params_replaced\n')
@@ -294,7 +298,6 @@ class DQlearner():
         qtab=[]
         for idx,d in self.q_count.iterrows():
             qvals=self.sess.run(self.q_eval, feed_dict={self.s: [idx]})[0]
-            print(str(idx)+" "+str(qvals))
             qtab.append({"index":idx,0:qvals[0],1:qvals[1]})
         qtab=pd.DataFrame(qtab).set_index("index")
         # print(qtab)

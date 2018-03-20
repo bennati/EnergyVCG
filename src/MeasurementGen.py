@@ -10,7 +10,7 @@ class BaseMeasurementGen():
         """
         return [{"value":0,"timestep":timestep,"agentID":i,"threshold":0} for i in range(len(population))]
 
-class MeasurementGenUniformDQ(BaseMeasurementGen):
+class MeasurementGenUniform(BaseMeasurementGen):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.n1=kwargs["n1"]
@@ -37,35 +37,6 @@ class MeasurementGenUniformDQ(BaseMeasurementGen):
             thresh=len(population) #np.random.randint(1,3)
             assert(thresh<=sum(vals))
             ret=[{"value":int(v),"cost":int(c),"value_raw":v,"cost_raw":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]
-            return ret
-
-class MeasurementGenUniform(BaseMeasurementGen):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-        self.n1=kwargs["n1"]
-        self.n2=kwargs["n2"]
-        assert(self.n1>=0)
-        assert(self.n2>self.n1)
-        self.n=kwargs["N"]
-        self.t=kwargs["T"]
-        if self.t is None:
-            print("setting t to default")
-            self.t=1000
-
-
-    def get_measurements(self,population,timestep):
-        """
-        Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
-        """
-        if timestep>self.t:
-            return None
-        else:
-            vals=[np.random.randint(max(1,self.n1),self.n2) for _ in population]
-            costs=[np.random.randint(max(1,self.n1),self.n2) for _ in population]
-            # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))
-            thresh=len(population) #np.random.randint(1,3)
-            assert(thresh<=sum(vals))
-            ret=[{"value":v,"cost":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]
             return ret
 
 class MeasurementGenNormal(BaseMeasurementGen):
