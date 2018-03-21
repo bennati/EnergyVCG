@@ -2,7 +2,7 @@ import pandas as pd
 import functools
 from utils import *
 
-def subset_df(df,conditions):
+def subset_df(df,conditions=pd.Series()):
     if conditions.empty:
         ret=df
     else:
@@ -54,11 +54,12 @@ for test,l in tests:
         plot_trend(stats_gini,varname,"./plots/"+str(test)+"/gini_"+str(varname)+".pdf")
         stats_rews=compute_stats(res_rews,idx=[varname],columns=["reward"])
         plot_trend(stats_rews,varname,"./plots/"+str(test)+"/rewards_"+str(varname)+".pdf")
-        stats_percs=compute_stats(res_percs,idx=[varname],columns=["value","cost"])
+        f=functools.partial(subset_df,conditions=pd.Series({"timestep":int(res_decs["timestep"].max())}))
+        stats_percs=compute_stats(f(res_percs),idx=[varname],columns=["value","cost"])
         plot_trend(stats_percs,varname,"./plots/"+str(test)+"/perceptions_"+str(varname)+".pdf")
-        stats_decs=compute_stats(res_decs,idx=[varname],columns=["contribution","cost","cost_pop","contributed"])
+        stats_decs=compute_stats(f(res_decs),idx=[varname],columns=["contribution","cost","cost_pop","contributed"])
         plot_trend(stats_decs,varname,"./plots/"+str(test)+"/decisions_"+str(varname)+".pdf")
-        stats_eval=compute_stats(res_eval,idx=[varname],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
+        stats_eval=compute_stats(f(res_eval),idx=[varname],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
         plot_measures(stats_eval,varname,"./plots/"+str(test)+"/eval_"+str(varname)+".pdf")
         if contrib_hist is not None:
         stats_contrib_hist=compute_stats(contrib_hist,idx=[varname,"value"],columns=["cnt"])
