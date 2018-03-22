@@ -8,6 +8,7 @@ from DecisionLogic import BaseDecisionLogic
 from RewardLogic import *
 from MeasurementGen import *
 from sim_default import *
+from sim_nrel_data import *
 from sim_qlearn import *
 from sim_aspiration import *
 from sim_knapsack import *
@@ -90,7 +91,7 @@ def save_results(test,log_tot):
     return res_decs
 
 def save_qtabs(test,qtables):
-    if (qtables is not None) or any(qtables):            # if at least a table is not None
+    if any([(q is not None) and (not q.empty) for q in qtables]):            # if at least a table is not None
         ## save to file
         qtables=pd.concat(qtables)
          # transform the index to two separate columns

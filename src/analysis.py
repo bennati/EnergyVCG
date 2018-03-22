@@ -81,6 +81,7 @@ for test,l in tests:
     # var2plot="yes"
     try:
         qtables=pd.read_csv("./data/"+str(test)+"/qtables.csv.gz")
+        vars2plot=[v for v in vars2plot if v in qtables.columns]
         qtables_stats=compute_stats([qtables],idx=["state_val","state_cost"],columns=vars2plot+["num"])
         stats_q=compute_stats([qtables],idx=["state_val","state_cost"]+varnames,columns=vars2plot+["num"])
         stats_qa=compute_stats([qtables],idx=["state_val","state_cost","idx"]+varnames,columns=vars2plot+["num"])

@@ -78,12 +78,13 @@ class DecisionLogicSupervisorKnapsack(BaseDecisionLogic):
     Optimize the knapsack problem
     """
     def get_decision(self,perceptions):
-        W=max([a["threshold"] for a in perceptions]) # public good threshold
-        items=[(a["agentID"],a["cost"],a["value"]) for a in perceptions] # values to maximize and contributions to achieve
+        items=[(a["agentID"],int(round(a["cost"],2)*100),int(round(a["value"],2)*100)) for a in perceptions] # requires integer values
+        W=int(max([a["threshold"] for a in perceptions]))*100 # public good threshold
         maxcost=max([c for i,c,v in items])
         items=[(i,maxcost-c+1,v) for i,c,v in items] # invert the costs because the knapsack is a maximization problem
         _,vals=knapsack(items,W)
-        s=sum([v for i,c,v in vals])
+        fsum=lambda vals: sum([v for i,c,v in vals])
+        s=fsum(vals)
         assert(s<=W)
         excluded=[]
         tmp=vals.copy()
@@ -97,12 +98,12 @@ class DecisionLogicSupervisorKnapsack(BaseDecisionLogic):
         if(excluded != []       # if not all users contributed
            and s<W):              # and if another contributor is needed
             vals.append(max(excluded, key=lambda x: x[1])) # add the contributor with the lowest cost
-        assert(sum([v for i,c,v in vals])>=W)           # successful
+        assert(fsum(vals)>=W)           # successful
         # find what agents contribute
         idx=[i for i,c,v in vals] # take first occurrence, it works even if two agents have the same cost and value
         decisions=[True if p["agentID"] in idx else False for p in perceptions]
         # debug
         assert(sum(decisions)==len(idx))
-        assert(sum([p["value"] for p in perceptions if p["agentID"] in idx])>=W)
+        assert(sum([p["value"] for p in perceptions if p["agentID"] in idx])>=W/100.0)
         self.act=[{"contribution":(a["value"] if d else np.nan),"cost":(a["cost"] if d else np.nan),"privacy":1,"agentID":a["agentID"],"contributed":d,"timestep":a["timestep"],"threshold":a["threshold"]} for a,d in zip(perceptions,decisions)]
         return self.act
