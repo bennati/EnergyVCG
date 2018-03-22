@@ -90,9 +90,8 @@ class DecisionLogicWlearn(BaseDecisionLogic):
             self.wlearner_gini.learn(current,self.states[0],gini_reward,self.qlearner.get_qvalues(current).max(),0)
 
     def get_qtable(self):
-        print("------------------------------")
         asd=self.qlearner.get_qtable()
-        asd.rename(columns={0:"no",1:"yes"},inplace=True)
+        asd.rename(columns={0:"no_rew",1:"yes_rew"},inplace=True)
         asd1=self.wlearner.get_qtable()
         asd=pd.merge(asd,asd1,left_index=True,right_index=True)
         asd1=self.qlearner_gini.get_qtable()
@@ -101,10 +100,14 @@ class DecisionLogicWlearn(BaseDecisionLogic):
         asd1=self.wlearner_gini.get_qtable()
         asd1.rename(columns={"w":"gini"},inplace=True)
         asd=pd.merge(asd,asd1,left_index=True,right_index=True)
-        print(asd)
+        asd["yes"]=asd["yes_rew"]
+        asd.loc[asd["gini"]>asd["w"],"yes"]=asd["yes_gini"]
+        asd["no"]=asd["no_rew"]
+        asd.loc[asd["gini"]>asd["w"],"no"]=asd["no_gini"]
+        return asd
         # ret=asd.apply(lambda x: pd.Series(data={1:(x["yes"] if x["w"]>x["gini"] else x["yes_gini"]),0:(x["no"] if x["w"]>x["gini"] else x["no_gini"])}),axis=1)
         # return ret
-        return self.qlearner.get_qtable()
+        # return self.qlearner.get_qtable()
 
     def get_qcount(self):
         return self.qlearner.get_qcount()

@@ -36,13 +36,13 @@ for test,l in tests:
     varnames=[v for v in ["N","n1","n2"] if (v in res_eval.columns) and (len(res_eval[v].unique())>1)]
     varvalues=expandgrid({v:res_eval[v].unique() for v in varnames})
     try:
-    contrib_hist=pd.read_csv("./data/"+str(test)+"/contrib_hist.csv.gz")
+        contrib_hist=pd.read_csv("./data/"+str(test)+"/contrib_hist.csv.gz")
     except:
         contrib_hist=None
     # varnames=[c for c in contrib_hist.columns if c not in ["value","cnt"]]
     # varvalues=expandgrid({v:contrib_hist[v].unique() for v in varnames})
     try:
-    stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
+        stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
     except:
         stats_gini_contribs=None
     stats_evalt=compute_stats(res_eval,idx=["timestep"],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
@@ -50,7 +50,7 @@ for test,l in tests:
     ### now move to computing statistics that aggregate on one of the parameters ###
     for varname in varnames:
         if stats_gini_contribs is not None:
-        stats_gini=compute_stats([stats_gini_contribs],[varname],columns=["Contributors","Values"]) # average across repetitions
+            stats_gini=compute_stats([stats_gini_contribs],[varname],columns=["Contributors","Values"]) # average across repetitions
         plot_trend(stats_gini,varname,"./plots/"+str(test)+"/gini_"+str(varname)+".pdf")
         stats_rews=compute_stats(res_rews,idx=[varname],columns=["reward"])
         plot_trend(stats_rews,varname,"./plots/"+str(test)+"/rewards_"+str(varname)+".pdf")
@@ -62,8 +62,8 @@ for test,l in tests:
         stats_eval=compute_stats(f(res_eval),idx=[varname],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
         plot_measures(stats_eval,varname,"./plots/"+str(test)+"/eval_"+str(varname)+".pdf")
         if contrib_hist is not None:
-        stats_contrib_hist=compute_stats(contrib_hist,idx=[varname,"value"],columns=["cnt"])
-        plot_trend(stats_contrib_hist,"value","./plots/"+str(test)+"/contrib_hist_"+str(varname)+".pdf",yname=varname)
+            stats_contrib_hist=compute_stats(contrib_hist,idx=[varname,"value"],columns=["cnt"])
+            plot_trend(stats_contrib_hist,"value","./plots/"+str(test)+"/contrib_hist_"+str(varname)+".pdf",yname=varname)
 
     ### now compute statistics for each parameter configuration, aggregating only on repetitions ###
     stats_t=compute_stats(res_eval,idx=["timestep"]+varnames,columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
@@ -77,33 +77,34 @@ for test,l in tests:
         # plot_trend(tmp,"value","./plots/"+str(test)+"/contrib_hist_"+pdesc+".pdf")
 
     ## compute qtable heatmaps
-    var2plot="prob"
+    vars2plot=["prob"]
     # var2plot="yes"
     try:
         qtables=pd.read_csv("./data/"+str(test)+"/qtables.csv.gz")
-        qtables_stats=compute_stats([qtables],idx=["state_val","state_cost"],columns=[var2plot,"num"])
-        plot_trend(qtables_stats,"state_cost","./plots/"+str(test)+"/qtables_cost.pdf",yname="state_val",trends=[var2plot])
-        plot_trend(qtables_stats,"state_val","./plots/"+str(test)+"/qtables_val.pdf",yname="state_cost",trends=[var2plot])
-        stats_q=compute_stats([qtables],idx=["state_val","state_cost"]+varnames,columns=[var2plot,"num"])
-        stats_qa=compute_stats([qtables],idx=["state_val","state_cost","idx"]+varnames,columns=[var2plot,"num"])
-        for idx,p in varvalues.iterrows():
-            pdesc="_".join([str(k)+str(v) for k,v in dict(p).items()])
-            ## plot stats qtable
-            try:
-            tmp=subset_df(stats_q,p)
-            f=lambda df,col: np.histogram2d(df["state_cost"],df["state_val"],weights=df[col+"_mean"],bins=[np.append(df["state_val"].unique(),[df["state_val"].max()+1]),np.append(df["state_cost"].unique(),[df["state_cost"].max()+1])])
-                heatmap_choice,xlabs,ylabs=f(tmp,var2plot)
-            plot_hmap(heatmap_choice,"Average qvalue associated to contribution",str(test)+"/heat_q_choice"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost",ticks=[range(len(xlabs[:-1])),range(len(ylabs[:-1]))],ticklabs=[xlabs[:-1],ylabs[:-1]],inverty=False)
-            ## plot individual qtables
-            tmp=subset_df(stats_qa,p)
-            prefix="./plots/"+str(test)+"/qtabs"
-            if not os.path.exists(prefix):
-                os.makedirs(prefix)
-            for a in tmp["idx"].unique():
-                    heatmap_choice,xlabs,ylabs=f(tmp[tmp["idx"]==a],var2plot)
-                plot_hmap(heatmap_choice,"Average qvalue associated to contribution","heat_q_choice_"+str(a)+"_"+pdesc+".pdf",prefix,xlab="Value",ylab="Cost",ticks=[range(len(xlabs[:-1])),range(len(ylabs[:-1]))],ticklabs=[xlabs[:-1],ylabs[:-1]],inverty=False)
-            except:
-                print("unable to plot heatmap for p: "+str(p))
+        qtables_stats=compute_stats([qtables],idx=["state_val","state_cost"],columns=vars2plot+["num"])
+        stats_q=compute_stats([qtables],idx=["state_val","state_cost"]+varnames,columns=vars2plot+["num"])
+        stats_qa=compute_stats([qtables],idx=["state_val","state_cost","idx"]+varnames,columns=vars2plot+["num"])
+        for var2plot in vars2plot:
+            plot_trend(qtables_stats,"state_cost","./plots/"+str(test)+"/qtables_"+str(var2plot)+"_cost.pdf",yname="state_val",trends=[var2plot])
+            plot_trend(qtables_stats,"state_val","./plots/"+str(test)+"/qtables_"+str(var2plot)+"_val.pdf",yname="state_cost",trends=[var2plot])
+            for idx,p in varvalues.iterrows():
+                pdesc="_".join([str(k)+str(v) for k,v in dict(p).items()])
+                ## plot stats qtable
+                try:
+                    tmp=subset_df(stats_q,p)
+                    f=lambda df,col: np.histogram2d(df["state_cost"],df["state_val"],weights=df[col+"_mean"],bins=[np.append(df["state_val"].unique(),[df["state_val"].max()+1]),np.append(df["state_cost"].unique(),[df["state_cost"].max()+1])])
+                    heatmap_choice,xlabs,ylabs=f(tmp,var2plot)
+                    plot_hmap(heatmap_choice,"Average qvalue associated to contribution",str(test)+"/heat_q_choice_"+str(var2plot)+"_"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost",ticks=[range(len(xlabs[:-1])),range(len(ylabs[:-1]))],ticklabs=[xlabs[:-1],ylabs[:-1]],inverty=False)
+                    ## plot individual qtables
+                    tmp=subset_df(stats_qa,p)
+                    prefix="./plots/"+str(test)+"/qtabs"
+                    if not os.path.exists(prefix):
+                        os.makedirs(prefix)
+                    for a in tmp["idx"].unique():
+                        heatmap_choice,xlabs,ylabs=f(tmp[tmp["idx"]==a],var2plot)
+                        plot_hmap(heatmap_choice,"Average qvalue associated to contribution","heat_q_choice_"+str(var2plot)+"_"+str(a)+"_"+pdesc+".pdf",prefix,xlab="Value",ylab="Cost",ticks=[range(len(xlabs[:-1])),range(len(ylabs[:-1]))],ticklabs=[xlabs[:-1],ylabs[:-1]],inverty=False)
+                except:
+                    print("unable to plot heatmap for p: "+str(p))
             # heatmap_count,xlabs,ylabs=f(tmp,"num")
             # plot_hmap(heatmap_count,"Average number of occurrences of a state",str(test)+"/heat_q_count"+pdesc+".pdf","./plots",xlab="Value",ylab="Cost",ticks=[range(len(xlabs[:-1])),range(len(ylabs[:-1]))],ticklabs=[xlabs[:-1],ylabs[:-1]],inverty=False)
             ## compute histograms
