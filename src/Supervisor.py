@@ -128,6 +128,7 @@ class BaseSupervisor(Model):
             # d.update({"agentID":i})
             # add here any extra information to give to the agents
             pdict.append(d)
+                del d
         return pdict
 
     def perception(self,perceptions=None):

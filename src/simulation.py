@@ -59,6 +59,7 @@ def compute_qtabs(n,p,model):
     return ret
 
 def body(n,conf):
+    tf.set_random_seed(n)
     np.random.seed(n)
     print("repetition: "+str(n))
     log=[]
@@ -79,10 +80,13 @@ def save_results(test,log_tot):
     res_decs.to_csv("./data/"+str(test)+"/decisions.csv.gz",index=False,compression='gzip')
     res_percs=pd.concat([pd.DataFrame(i["perception"]) for i in log_tot])
     res_percs.to_csv("./data/"+str(test)+"/perceptions.csv.gz",index=False,compression='gzip')
+    del res_percs
     res_rew=pd.concat([pd.DataFrame(i["reward"]) for i in log_tot])
     res_rew.to_csv("./data/"+str(test)+"/rewards.csv.gz",index=False,compression='gzip')
+    del res_rew
     res_eval=pd.concat([pd.DataFrame(i["evaluation"]) for i in log_tot])
     res_eval.to_csv("./data/"+str(test)+"/evaluation.csv.gz",index=False,compression='gzip')
+    del res_eval
     return res_decs
 
 def save_qtabs(test,qtables):
@@ -95,6 +99,7 @@ def save_qtabs(test,qtables):
         qtables.drop("index",axis=1,inplace=True)
         qtables["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtables.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
         qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
+        del qtables
 
 def save_stats(test,conf,res_decs):
     # compute statistics for all tables in log file
@@ -104,12 +109,14 @@ def save_stats(test,conf,res_decs):
         contrib_hist=compute_contrib_hist(res_decs,varnames)
         contrib_hist.to_csv("./data/"+str(test)+"/contrib_hist.csv.gz",index=False,compression='gzip')
         #contrib_hist=pd.read_csv("./data/contrib_hist.csv.gz")
+        # stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
+        del contrib_hist
         # aggregate over all agent ids and compute gini coefficients
         stats_gini_contribs=res_decs.groupby(varnames+["agentID","repetition"],as_index=False).agg({"contributed":np.sum,"contribution":np.sum}) # sum up all contributions in each simulation (over all timesteps)
         stats_gini_contribs=stats_gini_contribs.groupby(varnames+["repetition"],as_index=False).agg({"contributed":gini,"contribution":gini}) # compute gini coefficient across agents
         stats_gini_contribs=stats_gini_contribs.rename(columns={"contributed":"Contributors","contribution":"Values"})
         stats_gini_contribs.to_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz",index=False,compression='gzip')
-        # stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
+        del stats_gini_contribs
     #stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
 
 def run_experiment_par(test,conf):
