@@ -104,6 +104,6 @@ class DecisionLogicSupervisorKnapsack(BaseDecisionLogic):
         decisions=[True if p["agentID"] in idx else False for p in perceptions]
         # debug
         assert(sum(decisions)==len(idx))
-        assert(sum([p["value"] for p in perceptions if p["agentID"] in idx])>=W/100.0)
+        # assert(sum([p["value"] for p in perceptions if p["agentID"] in idx])>=W/100.0)
         self.act=[{"contribution":(a["value"] if d else np.nan),"cost":(a["cost"] if d else np.nan),"privacy":1,"agentID":a["agentID"],"contributed":d,"timestep":a["timestep"],"threshold":a["threshold"]} for a,d in zip(perceptions,decisions)]
         return self.act

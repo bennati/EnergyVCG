@@ -105,7 +105,12 @@ class MeasurementGenNREL(BaseMeasurementGen):
         self.n2=7
         ## collect the data
         self.data=pd.read_csv(filename)
-        self.data=self.data.groupby("ids").apply(lambda x: pd.DataFrame(data={"value":[np.array(pd.DataFrame(x)["value_delta"])],"value_int":[np.array(pd.DataFrame(x)["value_delta_int"])],"cost":[np.array(pd.DataFrame(x)["cost_lin_distance"])],"cost_int":[np.array(pd.DataFrame(x)["cost_int"])],"l":pd.DataFrame(x).shape[0]}))
+        self.data=self.data.groupby("ids").apply(lambda x: pd.DataFrame(data={
+            "value":[np.array(pd.DataFrame(x)["value_delta"])],
+            # "value_int":[np.array(pd.DataFrame(x)["value_delta_int"])],
+            "cost":[np.array(pd.DataFrame(x)["cost_lin_distance"])],
+            # "cost_int":[np.array(pd.DataFrame(x)["cost_int"])],
+            "l":pd.DataFrame(x).shape[0]}))
         ## reshape the data
         self.n=kwargs["N"]
         if self.data.shape[0]<self.n:
@@ -142,9 +147,9 @@ class MeasurementGenNREL(BaseMeasurementGen):
         # self.data=pd.concat([longs]+ret).reset_index().drop("index",axis=1)
         # print(self.data)
         self.values=[iter(d["value"]) for d in self.data_streams]
-        self.values_int=[iter(d["value_int"]) for d in self.data_streams]
+        # self.values_int=[iter(d["value_int"]) for d in self.data_streams]
         self.costs=[iter(d["cost"]) for d in self.data_streams]
-        self.costs_int=[iter(d["cost_int"]) for d in self.data_streams]
+        # self.costs_int=[iter(d["cost_int"]) for d in self.data_streams]
 
     def get_measurements(self,population,timestep):
         """
@@ -154,14 +159,14 @@ class MeasurementGenNREL(BaseMeasurementGen):
             try:
                 vals=[next(i) for i in self.values]
                 costs=[next(i) for i in self.costs]
-                vals_int=[next(i) for i in self.values_int]
-                costs_int=[next(i) for i in self.costs_int]
+                # vals_int=[next(i) for i in self.values_int]
+                # costs_int=[next(i) for i in self.costs_int]
                 # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))
                 thresh=len(population)*0.8 #np.random.randint(1,5)
                 assert(thresh<=sum(vals))
                 if thresh>sum(vals):
                     print("Warning, threshold is too high")
-                ret=[{"value":int(v),"cost":int(c),"value_raw":vr,"cost_raw":cr,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c,vr,cr) in enumerate(zip(vals_int,costs_int,vals,costs))]
+                ret=[{"value":v,"cost":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]
                 return ret
             except:
                 return None

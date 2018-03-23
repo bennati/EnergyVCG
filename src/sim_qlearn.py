@@ -19,7 +19,7 @@ class DecisionLogicQlearn(BaseDecisionLogic):
             self.qlearner.train()   # pretraining
 
     def get_current_state(self):
-        ret=(self.model.current_state["perception"]["value_raw"],self.model.current_state["perception"]["cost_raw"])
+        ret=(self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])
         assert(ret in self.states)
         return ret
 

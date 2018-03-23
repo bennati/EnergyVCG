@@ -46,7 +46,7 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
         tmp1=pd.DataFrame(data={"action":decs,"agentID":idxs})
         tmp=pd.merge(pd.DataFrame(perceptions),tmp1,on=["agentID"])
         # print(decs)
-        self.act=[{"contribution":(r[1]["value_raw"] if r[1]["action"] else np.nan),"cost":(r[1]["cost_raw"] if r[1]["action"] else np.nan),"privacy":(1 if r[1]["action"] else 0),"agentID":r[1]["agentID"],"contributed":r[1]["action"],"timestep":r[1]["timestep"],"threshold":r[1]["threshold"]} for r in tmp.iterrows()]
+        self.act=[{"contribution":(r[1]["value"] if r[1]["action"] else np.nan),"cost":(r[1]["cost"] if r[1]["action"] else np.nan),"privacy":(1 if r[1]["action"] else 0),"agentID":r[1]["agentID"],"contributed":r[1]["action"],"timestep":r[1]["timestep"],"threshold":r[1]["threshold"]} for r in tmp.iterrows()]
         return self.act
 
 np.random.seed(1)
@@ -84,7 +84,7 @@ class DecisionLogicDQ(BaseDecisionLogic):
         return self.dqlearner.get_qcount()
 
     def get_current_state(self):
-        return (self.model.current_state["perception"]["value_raw"],self.model.current_state["perception"]["cost_raw"])
+        return (self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])
 
     # def get_current_state_int(self):
     #     return (self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])

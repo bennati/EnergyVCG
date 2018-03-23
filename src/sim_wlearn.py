@@ -113,4 +113,4 @@ class DecisionLogicWlearn(BaseDecisionLogic):
         return self.qlearner.get_qcount()
 
     def get_current_state(self):
-        return (self.model.current_state["perception"]["value_raw"],self.model.current_state["perception"]["cost_raw"])
+        return (self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])

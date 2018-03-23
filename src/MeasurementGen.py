@@ -36,7 +36,7 @@ class MeasurementGenUniform(BaseMeasurementGen):
             # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))
             thresh=len(population) #np.random.randint(1,3)
             assert(thresh<=sum(vals))
-            ret=[{"value":int(v),"cost":int(c),"value_raw":v,"cost_raw":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]
+            ret=[{"value":v,"cost":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]
             return ret
 
 class MeasurementGenNormal(BaseMeasurementGen):
