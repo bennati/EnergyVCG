@@ -42,9 +42,10 @@ def compute_contrib_hist(decisions,varnames):
 def compute_qtabs(n,p,model):
     ret=None
     try:
-        tab=pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in model.schedule.agents])
+        tab=model.decision_fct.get_qtable()
+        print(tab)
         tab=tab.rename(columns={0:"no",1:"yes"})
-        tab2=pd.concat([a.decision_fct.get_qcount().assign(idx=a.unique_id) for a in model.schedule.agents]) # get the number of experiences for each state
+        tab2=model.decision_fct.get_qcount() # get the number of experiences for each state
         tab["index"]=tab.index
         tab2["index"]=tab2.index
         tab=pd.merge(tab,tab2,right_on=["idx","index"],left_on=["idx","index"]) # merge along the index and agent id

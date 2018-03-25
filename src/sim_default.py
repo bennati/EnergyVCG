@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from DecisionLogic import BaseDecisionLogic
 from utils import *
 
@@ -25,6 +26,12 @@ class DecisionLogicSupervisorEmpty(BaseDecisionLogic):
         self.act=[{"contribution":(r[1]["value"] if r[1]["action"] else np.nan),"cost":(r[1]["cost"] if r[1]["action"] else np.nan),"privacy":(1 if r[1]["action"] else 0),"agentID":r[1]["agentID"],"contributed":r[1]["action"],"timestep":r[1]["timestep"],"threshold":r[1]["threshold"]} for r in tmp.iterrows()]
         del tmp,decs,idxs,tmp1
         return self.act
+
+    def get_qtable(self):
+        return pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in self.model.schedule.agents])
+
+    def get_qcount(self):
+        return pd.concat([a.decision_fct.get_qcount().assign(idx=a.unique_id) for a in self.model.schedule.agents])
 
 class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
     """

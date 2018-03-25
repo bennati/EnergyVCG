@@ -20,9 +20,18 @@ def boltzmann(qtable,temp):
     if sum(probs)==0:
         probs=[0.5,0.5]
     else:
-        probs=[np.round(p/sum(probs),2) for p in probs] # normalize
+        probs=[np.round(p/sum(probs),3) for p in probs] # normalize
+    try:
     assert(sum(probs)==1)
     return probs
+    except:
+        s=sum(probs)
+        # print("Probs "+str(probs)+" don't sum to one but to "+str(s))
+        if s<1:
+            probs[-1]+=1-s
+        else:
+            probs[np.argmax(probs)]-=s-1
+        return probs
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
