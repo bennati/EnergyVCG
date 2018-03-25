@@ -15,12 +15,6 @@ class BaseSupervisor(Model):
         super().__init__()
         # parameters
         self.measurement_fct=measurement_fct()
-        self.decision_fct=decision_fct(self)
-        self.reward_fct=reward_fct(self)
-        self.evaluation_fct=evaluation_fct()
-        self.agent_decision_fct=agent_decision_fct # keep it a class as it will be instanciated in the agent init
-        self.agent_type=agent_type
-        self.log=[]
         if self.measurement_fct.n!=int(N):
             print("warning, setting N according to what provided by measurement fct")
             self.N=self.measurement_fct.n
@@ -29,6 +23,12 @@ class BaseSupervisor(Model):
         # self.T=int(T)
         if self.N<=0:
             raise AssertionError("Initializing empty population")
+        self.decision_fct=decision_fct(self)
+        self.reward_fct=reward_fct(self)
+        self.evaluation_fct=evaluation_fct()
+        self.agent_decision_fct=agent_decision_fct # keep it a class as it will be instanciated in the agent init
+        self.agent_type=agent_type
+        self.log=[]
         self.schedule = RandomActivation(self)
         self.__create_agents()
         self.current_state={"perception":self.perception_dict(0),"reward":[0]*self.N}
@@ -172,7 +172,6 @@ class BaseSupervisor(Model):
             perceptions=self.current_state["perception"]
         # debug
         tmp=pd.merge(pd.DataFrame(perceptions),pd.DataFrame(decisions),on=["agentID"])
-        # tmp["value"]=[(r[1]["value"] if r[1]["contributed"]==1 else np.nan) for r in tmp.iterrows()]
         assert(((tmp["value"] == tmp["contribution"]) | np.isnan(tmp["contribution"])).all())
         assert(((tmp["cost_x"] == tmp["cost_y"]) | np.isnan(tmp["cost_y"])).all())
             # assert(all([p["cost"]==d["cost"] for p,d in zip(self.current_state["perception"],decisions)]))
