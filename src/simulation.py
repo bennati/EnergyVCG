@@ -43,12 +43,12 @@ def compute_qtabs(n,p,model):
     ret=None
     try:
         tab=model.decision_fct.get_qtable()
-        print(tab)
-        tab=tab.rename(columns={0:"no",1:"yes"})
-        tab2=model.decision_fct.get_qcount() # get the number of experiences for each state
+        # print(tab)
+        # tab=tab.rename(columns={0:"no",1:"yes"})
+        # tab2=model.decision_fct.get_qcount() # get the number of experiences for each state
         tab["index"]=tab.index
-        tab2["index"]=tab2.index
-        tab=pd.merge(tab,tab2,right_on=["idx","index"],left_on=["idx","index"]) # merge along the index and agent id
+        # tab2["index"]=tab2.index
+        # tab=pd.merge(tab,tab2,right_on=["idx","index"],left_on=["idx","index"]) # merge along the index and agent id
         tab["repetition"]=n
         print(dict(p))
         print(tab)
@@ -60,12 +60,28 @@ def compute_qtabs(n,p,model):
         print(e)
     return ret
 
-def body(n,conf):
+# def body_q(n,conf):
+#     tf.set_random_seed(n)
+#     np.random.seed(n)
+#     print("repetition: "+str(n))
+#     log=[]
+#     qtab=[]
+#     for idx,p in expandgrid(conf["params"]).iterrows():
+#         params=p.to_dict()
+#         print(params)
+#         params.update({"repetition":n,"T":conf["T"]})
+#         f=functools.partial(conf["meas_fct"],**params)
+#         model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
+#         model.run(params=params)
+#         log=log+model.log
+#         qtab=qtab+[compute_qtabs(n,p,model)]
+#     return log,qtab
+
+def body(n,conf,test):
     tf.set_random_seed(n)
     np.random.seed(n)
     print("repetition: "+str(n))
     log=[]
-    qtab=[]
     for idx,p in expandgrid(conf["params"]).iterrows():
         params=p.to_dict()
         print(params)
@@ -74,8 +90,8 @@ def body(n,conf):
         model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
         model.run(params=params)
         log=log+model.log
-        qtab=qtab+[compute_qtabs(n,p,model)]
-    return log,qtab
+        save_qtab(test,compute_qtabs(n,p,model),params)
+    return log
 
 def save_results(test,log_tot):
     res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
@@ -91,17 +107,28 @@ def save_results(test,log_tot):
     del res_eval
     return res_decs
 
-def save_qtabs(test,qtables):
-    if any([(q is not None) and (not q.empty) for q in qtables]):            # if at least a table is not None
-        ## save to file
-        qtables=pd.concat(qtables)
+# def save_qtabs(test,qtables):
+#     if any([(q is not None) and (not q.empty) for q in qtables]):            # if at least a table is not None
+#         ## save to file
+#         qtables=pd.concat(qtables)
+#          # transform the index to two separate columns
+#         qtables["state_val"]=qtables["index"].transform(lambda x: x[0])
+#         qtables["state_cost"]=qtables["index"].transform(lambda x: x[1])
+#         qtables.drop("index",axis=1,inplace=True)
+#         if all([i in qtables.columns for i in ["yes","no"]]):
+#             qtables["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtables.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
+#         qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
+#         del qtables
+
+def save_qtab(test,qtab,params):
+    if qtab is not None and not qtab.empty:
          # transform the index to two separate columns
-        qtables["state_val"]=qtables["index"].transform(lambda x: x[0])
-        qtables["state_cost"]=qtables["index"].transform(lambda x: x[1])
-        qtables.drop("index",axis=1,inplace=True)
-        qtables["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtables.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
-        qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
-        del qtables
+        qtab["state_val"]=qtab["index"].transform(lambda x: x[0])
+        qtab["state_cost"]=qtab["index"].transform(lambda x: x[1])
+        qtab.drop("index",axis=1,inplace=True)
+        if all([i in qtab.columns for i in ["yes","no"]]):
+            qtab["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtab.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
+        qtab.to_csv("./data/"+str(test)+"/qtab_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
 
 def save_stats(test,conf,res_decs):
     # compute statistics for all tables in log file
@@ -125,20 +152,20 @@ def run_experiment_par(test,conf):
     print("starting "+str(test))
     if not os.path.exists("data/"+str(test)):
         os.makedirs("data/"+str(test))
-    part_fun=functools.partial(body,conf=conf)
+    part_fun=functools.partial(body,conf=conf,test=test)
     if __name__ == '__main__':
         print("starting processes")
         pool=Pool()
         ans=pool.map(part_fun,range(conf["reps"]))
     else:
         ans=map(part_fun,range(conf["reps"]))
-    log_tot,qtables=zip(*ans)
+    # log_tot,qtables=zip(*ans)
     # flatten
-    log_tot=[i for sl in log_tot for i in sl]
-    qtables=[i for sl in qtables for i in sl]
+    log_tot=[i for sl in ans for i in sl]
+    # qtables=[i for sl in qtables for i in sl]
     ## save results
     res_decs=save_results(test,log_tot)
-    save_qtabs(test,qtables)
+    # save_qtabs(test,qtables)
     save_stats(test,conf,res_decs)
 
 def run_experiment(test,conf):
@@ -160,8 +187,9 @@ def run_experiment(test,conf):
             ## save intermediate results
             res_decs=save_results(test,log_tot)
             ## compute qtables
-            qtab_list=qtab_list+[compute_qtabs(r,p,model)]
-            save_qtabs(test,qtab_list)
+            save_qtab(test,compute_qtabs(r,p,model),params)
+            # qtab_list=qtab_list+[compute_qtabs(r,p,model)]
+            # save_qtabs(test,qtab_list)
     # compute statistics for all tables in log file
     save_stats(test,conf,res_decs)
 

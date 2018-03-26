@@ -80,11 +80,12 @@ for test,l in tests:
     vars2plot=["prob"]
     # var2plot="yes"
     try:
-        qtables=pd.read_csv("./data/"+str(test)+"/qtables.csv.gz")
+        qtables=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("qtab")])
+        # qtables=pd.read_csv("./data/"+str(test)+"/qtables.csv.gz")
         vars2plot=[v for v in vars2plot if v in qtables.columns]
-        qtables_stats=compute_stats([qtables],idx=["state_val","state_cost"],columns=vars2plot+["num"])
-        stats_q=compute_stats([qtables],idx=["state_val","state_cost"]+varnames,columns=vars2plot+["num"])
-        stats_qa=compute_stats([qtables],idx=["state_val","state_cost","idx"]+varnames,columns=vars2plot+["num"])
+        qtables_stats=compute_stats([qtables],idx=["state_val","state_cost"],columns=vars2plot)#+["num"])
+        stats_q=compute_stats([qtables],idx=["state_val","state_cost"]+varnames,columns=vars2plot)#+["num"])
+        stats_qa=compute_stats([qtables],idx=["state_val","state_cost","idx"]+varnames,columns=vars2plot)#+["num"])
         for var2plot in vars2plot:
             plot_trend(qtables_stats,"state_cost","./plots/"+str(test)+"/qtables_"+str(var2plot)+"_cost.pdf",yname="state_val",trends=[var2plot])
             plot_trend(qtables_stats,"state_val","./plots/"+str(test)+"/qtables_"+str(var2plot)+"_val.pdf",yname="state_cost",trends=[var2plot])

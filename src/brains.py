@@ -1,4 +1,5 @@
 from utils import boltzmann
+import itertools
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -11,17 +12,17 @@ class Wlearner():
         self.alpha = alpha
         self.states=states
         self.wvalues=pd.DataFrame(data={"w":0},index=[str(s) for s in states])
-        self.w_count=pd.DataFrame(data={"num":0},index=[str(s) for s in states])
+        # self.w_count=pd.DataFrame(data={"num":0},index=[str(s) for s in states])
 
     def get_qtable(self):
         ret=self.wvalues.round(3)
         ret.index=self.states
         return ret
 
-    def get_qcount(self):
-        ret=self.w_count
-        ret.index=self.states
-        return ret
+    # def get_qcount(self):
+    #     ret=self.w_count
+    #     ret.index=self.states
+    #     return ret
 
     def learn(self,state, next_state, reward,optq_now,optq_future):
         state=tuple(int(i) for i in state) # convert to int
@@ -31,7 +32,7 @@ class Wlearner():
         new_w = w + self.alpha * (optq_now - reward - self.gamma * optq_future - w)
         self.wvalues.loc[str(state)] = new_w
         # print("updating wlearner at state "+str(state)+" from "+str(w)+" to "+str(new_w))
-        self.w_count.loc[str(state)]+=1
+        # self.w_count.loc[str(state)]+=1
 
     def get_decision(self,state):
         state=tuple(int(i) for i in state) # convert to int
@@ -49,7 +50,7 @@ class Qlearner():
         self.actions=actions
         self.states=states
         self.qvalues=pd.DataFrame(data={a:0 for a in self.actions},index=[str(s) for s in states])
-        self.q_count=pd.DataFrame(data={"num":0},index=[str(s) for s in states])
+        # self.q_count=pd.DataFrame(data={"num":0},index=[str(s) for s in states])
 
     def train(self,low=0,high=0):
         """
@@ -63,10 +64,10 @@ class Qlearner():
         ret.index=self.states
         return ret
 
-    def get_qcount(self):
-        ret=self.q_count
-        ret.index=self.states
-        return ret
+    # def get_qcount(self):
+    #     ret=self.q_count
+    #     ret.index=self.states
+    #     return ret
 
     def learn(self,state, next_state, action, reward):
         state=tuple(int(i) for i in state) # convert to int
@@ -75,7 +76,7 @@ class Qlearner():
         new_q = qsa + self.alpha * (reward + self.gamma * self.get_qvalues(next_state).max() - qsa)
         self.qvalues.loc[str(state), action] = new_q
         # print("updating qlearner at state "+str(state)+" from "+str(qsa)+" to "+str(new_q))
-        self.q_count.loc[str(state)]+=1
+        # self.q_count.loc[str(state)]+=1
 
     def get_decision(self,state):
         state=tuple(int(i) for i in state) # convert to int
@@ -106,7 +107,8 @@ class DQlearner():
               batch_size=1,
               e_greedy_increment=None,
               output_graph=False):
-        self.q_count=pd.DataFrame(data={"num":0},index=states)
+        self.states=states
+        # self.q_count=pd.DataFrame(data={"num":0},index=states)
         self.n_actions = len(actions)
         self.act=0
         self.n_features = n_features
@@ -123,6 +125,7 @@ class DQlearner():
         # total learning step
         self.learn_step_counter = 0
 
+        if self.batch_size>1:
         # initialize zero memory [s, a, r, s_]
         self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
 
@@ -290,7 +293,7 @@ class DQlearner():
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
         # update counts
-        self.q_count.loc[[tuple(int(s) for s in state)],'num']+=1
+        # self.q_count.loc[[tuple(int(s) for s in state)],'num']+=1
 
     # def plot_cost(self):
     #     import matplotlib.pyplot as plt
@@ -301,7 +304,8 @@ class DQlearner():
 
     def get_qtable(self):
         # print(self.losses)
-        qtab=[{**{i:v for i,v in enumerate(self.sess.run(self.q_eval, feed_dict={self.s: [idx]})[0])},"index":idx} for idx,d in self.q_count.iterrows()]
+        possible_values=list(range(max(1,self.states[0]),self.states[1])) # TODO binarize a continuous range
+        qtab=[{**{i:v for i,v in enumerate(self.sess.run(self.q_eval, feed_dict={self.s: [idx]})[0])},"index":idx} for idx in itertools.product(possible_values,repeat=self.n_features)]
         ## slower
         # qtab=[]
         # for idx,d in self.q_count.iterrows():
@@ -314,8 +318,8 @@ class DQlearner():
         # print(qtab)
         return qtab
 
-    def get_qcount(self):
-        return self.q_count
+    # def get_qcount(self):
+        # return self.q_count
 
     def get_qvalues(self,state):
         qvals=self.sess.run(self.q_eval, feed_dict={self.s: [state]})[0]

@@ -30,8 +30,8 @@ class DecisionLogicSupervisorEmpty(BaseDecisionLogic):
     def get_qtable(self):
         return pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in self.model.schedule.agents])
 
-    def get_qcount(self):
-        return pd.concat([a.decision_fct.get_qcount().assign(idx=a.unique_id) for a in self.model.schedule.agents])
+    # def get_qcount(self):
+    #     return pd.concat([a.decision_fct.get_qcount().assign(idx=a.unique_id) for a in self.model.schedule.agents])
 
 class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
     """
