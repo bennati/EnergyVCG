@@ -13,7 +13,13 @@ import math
 def renormalize(n, range1, range2):
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]
-    return (delta2 * (n - range1[0]) / delta1) + range2[0]
+    ret=(delta2 * (n - range1[0]) / delta1) + range2[0]
+    if np.isnan(ret):
+        ret=range2[0]
+    if np.isinf(ret):
+        ret=range2[1]
+    assert(ret>=range2[0] and ret <=range2[1])
+    return ret
 
 def boltzmann(qtable,temp):
     probs=[math.exp(q/temp) for q in qtable] # boltzmann equation
