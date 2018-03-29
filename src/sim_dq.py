@@ -22,12 +22,10 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
     """
     def __init__(self,model,alpha=0.01,gamma=0.0,training=True):
         super().__init__(model)
-        # possible_values=list(range(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2)) # TODO binarize a continuous range
-        # possible_costs=list(range(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2)) # TODO binarize a continuous range
-        # self.states=list(itertools.product(*[possible_values,possible_costs]*self.model.N)) # all possible states
-        self.states=[[0]*2*self.model.N]
+        self.states=list(itertools.product(*[range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
+                                             range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)]*self.model.N))
         self.actions=list(itertools.product([False,True],repeat=self.model.N))
-        self.dqlearner=DQlearner([self.model.measurement_fct.n1,self.model.measurement_fct.n2],range(len(self.actions)),gamma=gamma,alpha=alpha,n_features=len(self.states[0]))
+        self.dqlearner=DQlearner(self.states,range(len(self.actions)),gamma=gamma,alpha=alpha,n_features=2*self.model.N,learn_step=50,batch_size=50)
         self.act=self.actions[0]
         # if training:
         #     self.dqlearner.train(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)
@@ -50,7 +48,7 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
         # self.reward=np.nanmean(np.array([r[rew_type] for r in reward])[list(self.act)]) # TODO it could be nan
         ## use all rewards
         self.reward=np.mean([r[rew_type] for r in reward])
-        self.dqlearner.learn(current,self.states[0],self.act,self.reward)
+        self.dqlearner.learn(current,[0]*2*self.model.N,self.act,self.reward)
 
     def get_qtable(self):
         return self.dqlearner.get_qtable().assign(idx=0)
@@ -73,15 +71,13 @@ tf.set_random_seed(1)
 class DecisionLogicDQ(BaseDecisionLogic):
     def __init__(self,model,alpha=0.01,gamma=0.0,training=False):
         super().__init__(model)
-        # possible_values=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
-        # possible_costs=list(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)) # TODO binarize a continuous range
-        # self.states=list(itertools.product(possible_values,possible_costs)) # all possible states
-        self.states=[[0]*2*self.model.N]
+        self.states=list(itertools.product(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
+                                           range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)))
         self.actions=[0,1]
-        self.dqlearner=DQlearner([self.model.model.measurement_fct.n1,self.model.model.measurement_fct.n2],self.actions,gamma=gamma,alpha=alpha)
+        self.dqlearner=DQlearner(self.states,self.actions,gamma=gamma,n_features=2,alpha=alpha,learn_step=10,batch_size=10)
         self.act=1
         if training:
-            self.dqlearner.train(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)
+            self.dqlearner.train(self.states)
 
     def get_decision(self, perception):
         current=self.get_current_state()
@@ -93,7 +89,7 @@ class DecisionLogicDQ(BaseDecisionLogic):
         assert(reward["agentID"]==self.model.unique_id)
         current=self.get_current_state()
         self.reward=reward[rew_type]
-        self.dqlearner.learn(current,self.states[0],self.act,self.reward)
+        self.dqlearner.learn(current,[0]*2,self.act,self.reward)
 
     def get_qtable(self):
         return self.dqlearner.get_qtable()

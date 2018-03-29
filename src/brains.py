@@ -203,15 +203,14 @@ class DQlearner():
 
         self.memory_counter += 1
 
-    def train(self,low,high):
+    def train(self,states):
         """
         Pretrain the network to contribute
         """
+        for s in states:
         for _ in range(100):
-            v=np.random.uniform(low,high)
-            c=np.random.uniform(low,high)
-            self.learn((v,c),[0,0],0,0)
-            self.learn((v,c),[0,0],1,1) # contributing is better
+                self.learn(s,[0]*len(s),0,0)
+                self.learn(s,[0]*len(s),1,1) # contributing is better
 
     def get_decision(self,observation):
         # to have batch dimension when feed into tf placeholder
@@ -305,9 +304,6 @@ class DQlearner():
     #     plt.show()
 
     def get_qtable(self):
-        # print(self.losses)
-        possible_values=list(range(max(1,self.states[0]),self.states[1])) # TODO binarize a continuous range
-        qtab=[{**{i:v for i,v in enumerate(self.sess.run(self.q_eval, feed_dict={self.s: [idx]})[0])},"index":idx} for idx in itertools.product(possible_values,repeat=self.n_features)]
         ## slower
         # qtab=[]
         # for idx,d in self.q_count.iterrows():
@@ -316,7 +312,7 @@ class DQlearner():
         #     for i in range(len(qvals)):
         #         d.update({i:qvals[i]})
         #     qtab.append(d)
-        qtab=pd.DataFrame(qtab).set_index("index")
+        qtab=pd.DataFrame(data=[self.sess.run(self.q_eval, feed_dict={self.s: [idx]})[0] for idx in self.states],index=self.states,dtype=np.float32)
         # print(qtab)
         return qtab
 
