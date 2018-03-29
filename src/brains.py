@@ -25,8 +25,8 @@ class Wlearner():
     #     return ret
 
     def learn(self,state, next_state, reward,optq_now,optq_future):
-        state=tuple(int(i) for i in state) # convert to int
-        next_state=tuple(int(i) for i in next_state) # convert to int
+        # state=tuple(int(i) for i in state) # convert to int
+        # next_state=tuple(int(i) for i in next_state) # convert to int
         # print([state,next_state,optq_now,optq_future])
         w = self.get_decision(state)
         new_w = w + self.alpha * (optq_now - reward - self.gamma * optq_future - w)
@@ -35,7 +35,7 @@ class Wlearner():
         # self.w_count.loc[str(state)]+=1
 
     def get_decision(self,state):
-        state=tuple(int(i) for i in state) # convert to int
+        # state=tuple(int(i) for i in state) # convert to int
         return float(self.wvalues.loc[str(state)])
 
 class Qlearner():
@@ -105,6 +105,7 @@ class DQlearner():
               replace_target_iter=300,
               memory_size=500,
               batch_size=1,
+              learn_step=1,
               e_greedy_increment=None,
               output_graph=False):
         self.states=states
@@ -121,10 +122,9 @@ class DQlearner():
         self.epsilon_increment = e_greedy_increment
         self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max
         self.unique_id=uuid.uuid4()
-
         # total learning step
         self.learn_step_counter = 0
-
+        self.learn_step=learn_step
         if self.batch_size>1:
         # initialize zero memory [s, a, r, s_]
         self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
@@ -231,6 +231,8 @@ class DQlearner():
             # print('\ntarget_params_replaced\n')
         if self.batch_size>1:
             self.store_transition(state,action,reward,next_state)
+        if self.learn_step_counter % self.learn_step==0:
+            if self.batch_size>1:
             # sample batch memory from all memory
             if self.memory_counter > self.memory_size:
                 sample_index = np.random.choice(self.memory_size, size=self.batch_size)
