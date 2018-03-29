@@ -20,17 +20,21 @@ for test,l in tests:
     print(test)
     if not os.path.exists("plots/"+str(test)):
         os.makedirs("plots/"+str(test))
-    res_decs=pd.read_csv("./data/"+str(test)+"/decisions.csv.gz")
+    res_decs=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("decisions")])
+    # res_decs=pd.read_csv("./data/"+str(test)+"/decisions.csv.gz")
     res_decs["algorithm"]=l
     res_decs["cost_pop"]=[(0 if np.isnan(i) else i)  for i in res_decs["cost"]]
     decs_list.append(res_decs)
-    res_percs=pd.read_csv("./data/"+str(test)+"/perceptions.csv.gz")
+    res_percs=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("perception")])
+    # res_percs=pd.read_csv("./data/"+str(test)+"/perceptions.csv.gz")
     res_percs["algorithm"]=l
     percs_list.append(res_percs)
-    res_rews=pd.read_csv("./data/"+str(test)+"/rewards.csv.gz")
+    res_rews=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("reward")])
+    # res_rews=pd.read_csv("./data/"+str(test)+"/rewards.csv.gz")
     res_rews["algorithm"]=l
     rews_list.append(res_rews)
-    res_eval=pd.read_csv("./data/"+str(test)+"/evaluation.csv.gz")
+    res_eval=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("evaluation")])
+    # res_eval=pd.read_csv("./data/"+str(test)+"/evaluation.csv.gz")
     res_eval["algorithm"]=l
     eval_list.append(res_eval)
     varnames=[v for v in ["N","n1","n2"] if (v in res_eval.columns) and (len(res_eval[v].unique())>1)]
