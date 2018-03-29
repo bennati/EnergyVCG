@@ -51,7 +51,6 @@ def compute_qtabs(n,p,model):
         # tab=pd.merge(tab,tab2,right_on=["idx","index"],left_on=["idx","index"]) # merge along the index and agent id
         tab["repetition"]=n
         print(dict(p))
-        print(tab)
         for k,v in dict(p).items():
             tab[k]=v
         ret=tab
@@ -81,7 +80,7 @@ def body(n,conf,test):
     tf.set_random_seed(n)
     np.random.seed(n)
     print("repetition: "+str(n))
-    log=[]
+    res_decs=pd.DataFrame()
     for idx,p in expandgrid(conf["params"]).iterrows():
         params=p.to_dict()
         print(params)
@@ -89,22 +88,15 @@ def body(n,conf,test):
         f=functools.partial(conf["meas_fct"],**params)
         model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
         model.run(params=params)
-        log=log+model.log
+        res_decs=pd.concat([res_decs,save_result(test,params,model.log)])
         save_qtab(test,compute_qtabs(n,p,model),params)
-    return log
+    return res_decs
 
-def save_results(test,log_tot):
-    res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log_tot])
-    res_decs.to_csv("./data/"+str(test)+"/decisions.csv.gz",index=False,compression='gzip')
-    res_percs=pd.concat([pd.DataFrame(i["perception"]) for i in log_tot])
-    res_percs.to_csv("./data/"+str(test)+"/perceptions.csv.gz",index=False,compression='gzip')
-    del res_percs
-    res_rew=pd.concat([pd.DataFrame(i["reward"]) for i in log_tot])
-    res_rew.to_csv("./data/"+str(test)+"/rewards.csv.gz",index=False,compression='gzip')
-    del res_rew
-    res_eval=pd.concat([pd.DataFrame(i["evaluation"]) for i in log_tot])
-    res_eval.to_csv("./data/"+str(test)+"/evaluation.csv.gz",index=False,compression='gzip')
-    del res_eval
+def save_result(test,params,log):
+    res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log])
+    res_decs.to_csv("./data/"+str(test)+"/decisions_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
+    for l in ["perception","reward","evaluation"]:
+        pd.concat([pd.DataFrame(i[l]) for i in log]).to_csv("./data/"+str(test)+"/"+str(l)+"_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
     return res_decs
 
 # def save_qtabs(test,qtables):
@@ -152,6 +144,11 @@ def run_experiment_par(test,conf):
     print("starting "+str(test))
     if not os.path.exists("data/"+str(test)):
         os.makedirs("data/"+str(test))
+    # empty dir
+    for files in os.listdir("data/"+str(test)):
+        f=os.path.join("data",str(test),files)
+        if os.path.isfile(f):
+            os.unlink(f)
     part_fun=functools.partial(body,conf=conf,test=test)
     if __name__ == '__main__':
         print("starting processes")
@@ -161,19 +158,25 @@ def run_experiment_par(test,conf):
         ans=map(part_fun,range(conf["reps"]))
     # log_tot,qtables=zip(*ans)
     # flatten
-    log_tot=[i for sl in ans for i in sl]
+    # log_tot=[i for sl in log_tot for i in sl]
     # qtables=[i for sl in qtables for i in sl]
     ## save results
-    res_decs=save_results(test,log_tot)
+    # res_decs=save_results(test,log_tot)
     # save_qtabs(test,qtables)
-    save_stats(test,conf,res_decs)
+    save_stats(test,conf,pd.concat(ans))
 
 def run_experiment(test,conf):
     print("starting "+str(test))
     if not os.path.exists("data/"+str(test)):
         os.makedirs("data/"+str(test))
-    log_tot=[]
-    qtab_list=[]
+    # empty dir
+    for files in os.listdir("data/"+str(test)):
+        f=os.path.join("data",str(test),files)
+        if os.path.isfile(f):
+            os.unlink(f)
+    # log_tot=[]
+    # qtab_list=[]
+    res_decs=pd.DataFrame()
     for r in range(conf["reps"]):
         print("repetition: "+str(r))
         for idx,p in expandgrid(conf["params"]).iterrows():
@@ -183,9 +186,10 @@ def run_experiment(test,conf):
             f=functools.partial(conf["meas_fct"],**params)
             model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
             model.run(params=params)
-            log_tot=log_tot+model.log # concatenate lists
+            # log_tot=log_tot+model.log # concatenate lists
             ## save intermediate results
-            res_decs=save_results(test,log_tot)
+            # res_decs=save_results(test,log_tot)
+            res_decs=pd.concat([res_decs,save_result(test,params,model.log)])
             ## compute qtables
             save_qtab(test,compute_qtabs(r,p,model),params)
             # qtab_list=qtab_list+[compute_qtabs(r,p,model)]
