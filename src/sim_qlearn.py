@@ -22,7 +22,9 @@ class DecisionLogicQlearn(BaseDecisionLogic):
         return (self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])
 
     def get_qtable(self):
-        return self.qlearner.get_qtable()
+        ret,l=self.qlearner.get_qtable()
+        ret["idx"]=self.model.unique_id
+        return ret,l
 
     # def get_qcount(self):
     #     return self.qlearner.get_qcount()

@@ -92,7 +92,10 @@ class DecisionLogicDQ(BaseDecisionLogic):
         self.dqlearner.learn(current,[0]*2,self.act,self.reward)
 
     def get_qtable(self):
-        return self.dqlearner.get_qtable()
+        ret,l=self.dqlearner.get_qtable()
+        ret["idx"]=self.model.unique_id
+        l={str(self.model.unique_id):l}
+        return ret,l
 
     # def get_qcount(self):
     #     return self.dqlearner.get_qcount()

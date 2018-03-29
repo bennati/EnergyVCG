@@ -17,7 +17,7 @@ class Wlearner():
     def get_qtable(self):
         ret=self.wvalues.round(3)
         ret.index=self.states
-        return ret
+        return ret,None
 
     # def get_qcount(self):
     #     ret=self.w_count
@@ -62,7 +62,7 @@ class Qlearner():
     def get_qtable(self):
         ret=self.qvalues.round(3)
         ret.index=self.states
-        return ret
+        return ret,None
 
     # def get_qcount(self):
     #     ret=self.q_count
@@ -211,6 +211,7 @@ class DQlearner():
         for _ in range(100):
                 self.learn(s,[0]*len(s),0,0)
                 self.learn(s,[0]*len(s),1,1) # contributing is better
+        self.cost_his = []
 
     def get_decision(self,observation):
         # to have batch dimension when feed into tf placeholder
@@ -314,7 +315,7 @@ class DQlearner():
         #     qtab.append(d)
         qtab=pd.DataFrame(data=[self.sess.run(self.q_eval, feed_dict={self.s: [idx]})[0] for idx in self.states],index=self.states,dtype=np.float32)
         # print(qtab)
-        return qtab
+        return qtab,self.cost_his
 
     # def get_qcount(self):
         # return self.q_count

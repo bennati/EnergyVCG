@@ -28,7 +28,13 @@ class DecisionLogicSupervisorEmpty(BaseDecisionLogic):
         return self.act
 
     def get_qtable(self):
-        return pd.concat([a.decision_fct.get_qtable().assign(idx=a.unique_id) for a in self.model.schedule.agents])
+        qtabs,losses=zip(*[a.decision_fct.get_qtable() for a in self.model.schedule.agents])
+        try:
+            losses={k:v for b in losses for k,v in b.items()} # flatten
+            losses=pd.DataFrame(data=losses)
+        except:
+            losses=None
+        return pd.concat(qtabs),losses
 
     # def get_qcount(self):
     #     return pd.concat([a.decision_fct.get_qcount().assign(idx=a.unique_id) for a in self.model.schedule.agents])

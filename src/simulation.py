@@ -41,8 +41,9 @@ def compute_contrib_hist(decisions,varnames):
 
 def compute_qtabs(n,p,model):
     ret=None
+    losses=None
     try:
-        tab=model.decision_fct.get_qtable()
+        tab,losses=model.decision_fct.get_qtable()
         # print(tab)
         # tab=tab.rename(columns={0:"no",1:"yes"})
         # tab2=model.decision_fct.get_qcount() # get the number of experiences for each state
@@ -57,7 +58,7 @@ def compute_qtabs(n,p,model):
     except Exception as e:
         print("Qtable not defined")
         print(e)
-    return ret
+    return ret,losses
 
 # def body_q(n,conf):
 #     tf.set_random_seed(n)
@@ -112,7 +113,9 @@ def save_result(test,params,log):
 #         qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
 #         del qtables
 
-def save_qtab(test,qtab,params):
+def save_qtab(test,qtabs,params):
+    qtab=qtabs[0]
+    losses=qtabs[1]
     if qtab is not None and not qtab.empty:
          # transform the index to two separate columns
         qtab["state_val"]=qtab["index"].transform(lambda x: x[0])
@@ -121,6 +124,8 @@ def save_qtab(test,qtab,params):
         if all([i in qtab.columns for i in ["yes","no"]]):
             qtab["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtab.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
         qtab.to_csv("./data/"+str(test)+"/qtab_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
+    if losses is not None and not losses.empty:
+        losses.to_csv("./data/"+str(test)+"/loss_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
 
 def save_stats(test,conf,res_decs):
     # compute statistics for all tables in log file

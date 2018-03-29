@@ -40,6 +40,30 @@ for test,l in tests:
     varnames=[v for v in ["N","n1","n2"] if (v in res_eval.columns) and (len(res_eval[v].unique())>1)]
     varvalues=expandgrid({v:res_eval[v].unique() for v in varnames})
     try:
+        losses=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("loss")])
+        cols=losses.columns
+        types=[np.unique(i) for i in zip(*[str(c).split("_") for c in cols])]
+        lstyles=['-','--',':','-.']
+        losses["bins"]=losses.index//100
+        losses=compute_stats(losses,idx=["bins"])
+        fig,ax=plt.subplots()
+        # ax.set_yscale('log')
+        cmap = plt.get_cmap('cubehelix_r')
+        colors=[cmap(float(i+1)/(losses.shape[1]+1)) for i in range(len(types[0]))]
+        # colorArtists = [plt.Line2D((0,1),(0,0), color=c) for c in colors]
+        for d,c in zip(types[0],colors):
+            names=([[str(d),"-"]]) if len(types)==1 else ([[str(d)+"_"+str(t),st] for t,st in zip(types[1],lstyles[:len(types[1])])])
+            for name,st in names:
+                ax.plot(losses.index,losses[name+"_mean"],color=c,linewidth=3,label=name,linestyle=st)
+                ax.fill_between(losses.index,np.asarray(losses[name+"_mean"])-np.asarray(losses[name+"_ci"]),np.asarray(losses[name+"_mean"])+np.asarray(losses[name+"_ci"]),alpha=0.2,facecolor=c,linewidth=3,linestyle=st)
+        ax.legend()
+        fig.savefig("./plots/"+str(test)+"/loss.pdf",format='pdf')
+        plt.close(fig)
+        # plot_trend(losses,"bins","./plots/"+str(test)+"/loss.pdf",trends=cols)
+    except Exception as e:
+        print("cannot print losses "+str(e))
+        losses=None
+    try:
         contrib_hist=pd.read_csv("./data/"+str(test)+"/contrib_hist.csv.gz")
     except:
         contrib_hist=None
@@ -124,6 +148,7 @@ for test,l in tests:
         print("qtables not found")
 
 ### generate comparison plots
+endtime=min([int(d["timestep"].max()) for d in decs_list])
 rews_list=pd.concat(rews_list)
 percs_list=pd.concat(percs_list)
 decs_list=pd.concat(decs_list)
@@ -133,7 +158,7 @@ for varname in varnames:
     plot_trend(stats_rews,varname,"./plots/rewards_"+str(varname)+".pdf",yname="algorithm",trends=["reward"],xlab="Average value",ylab="Reward",font_size=16)
     # stats_percs=compute_stats([perc_list],idx=[varname,"algorithm"],columns=["value","cost"])
     # plot_trend(stats_percs,varname,"./plots/"+str(test)+"/perceptions_"+str(varname)+".pdf",yname="algorithm")
-    f=functools.partial(subset_df,conditions=pd.Series({"timestep":int(res_decs["timestep"].max())}))
+    f=functools.partial(subset_df,conditions=pd.Series({"timestep":endtime}))
     stats_decs=compute_stats([f(decs_list)],idx=[varname,"algorithm"],columns=["contribution","cost","cost_pop","contributed","privacy"])
     plot_trend(stats_decs,varname,"./plots/costs_volunteers_"+str(varname)+".pdf",yname="algorithm",trends=["cost"],xlab="Average value",ylab="Cost for volunteers",font_size=16)
     plot_trend(stats_decs,varname,"./plots/costs_global_"+str(varname)+".pdf",yname="algorithm",trends=["cost_pop"],xlab="Average value",ylab="Cost",font_size=16)
