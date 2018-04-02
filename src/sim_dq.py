@@ -20,10 +20,10 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
     """
     Returns a constant decision
     """
-    def __init__(self,model,alpha=0.01,gamma=0.0,training=True):
+    def __init__(self,model,alpha=0.001,gamma=0.0,training=True):
         super().__init__(model)
-        self.states=list(itertools.product(*[range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
-                                             range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)]*self.model.N))
+        self.states=list(itertools.product(*[range(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2),
+                                             range(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2)]*self.model.N))
         self.actions=list(itertools.product([False,True],repeat=self.model.N))
         self.dqlearner=DQlearner(self.states,range(len(self.actions)),gamma=gamma,alpha=alpha,n_features=2*self.model.N,learn_step=50,batch_size=50)
         self.act=self.actions[0]
@@ -51,7 +51,10 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
         self.dqlearner.learn(current,[0]*2*self.model.N,self.act,self.reward)
 
     def get_qtable(self):
-        return self.dqlearner.get_qtable().assign(idx=0)
+        ret,l=self.dqlearner.get_qtable()
+        ret["idx"]="sup"
+        l=pd.DataFrame(data={"sup":l})
+        return ret,l
 
     # def get_qcount(self):
     #     return self.dqlearner.get_qcount().assign(idx=0)
@@ -69,7 +72,7 @@ tf.set_random_seed(1)
 
 # Deep Q Network off-policy
 class DecisionLogicDQ(BaseDecisionLogic):
-    def __init__(self,model,alpha=0.01,gamma=0.0,training=False):
+    def __init__(self,model,alpha=0.001,gamma=0.0,training=True):
         super().__init__(model)
         self.states=list(itertools.product(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
                                            range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)))

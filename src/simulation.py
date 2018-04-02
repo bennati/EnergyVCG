@@ -45,7 +45,7 @@ def compute_qtabs(n,p,model):
     try:
         tab,losses=model.decision_fct.get_qtable()
         # print(tab)
-        # tab=tab.rename(columns={0:"no",1:"yes"})
+        tab=tab.rename(columns={0:"no",1:"yes"})
         # tab2=model.decision_fct.get_qcount() # get the number of experiences for each state
         tab["index"]=tab.index
         # tab2["index"]=tab2.index
@@ -78,8 +78,8 @@ def compute_qtabs(n,p,model):
 #     return log,qtab
 
 def body(n,conf,test):
-    tf.set_random_seed(n)
     np.random.seed(n)
+    tf.set_random_seed(np.random.uniform(n))
     print("repetition: "+str(n))
     res_decs=pd.DataFrame()
     for idx,p in expandgrid(conf["params"]).iterrows():

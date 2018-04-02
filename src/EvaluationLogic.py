@@ -24,6 +24,7 @@ class BaseEvaluationLogic():
         tc=np.nansum(values)
         return [{"timestep": decisions[0]["timestep"],
                  "gini":gini(values),
+                 "gini_cost":gini(costs),
                 "cost":cost(costs),
                  "cost_pop":cost(cost_pop),
                  "privacy":sum(privs),
