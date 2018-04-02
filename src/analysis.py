@@ -113,25 +113,28 @@ for test,l in tests:
         # plot_trend(tmp,"value","./plots/"+str(test)+"/contrib_hist_"+pdesc+".pdf")
 
 ### generate comparison plots
-print("generating comparison plots")
-endtime=min([int(d["timestep"].max()) for d in decs_list])
+print("generating comparison plots at times "+str([int(d["timestep"].max()) for d in decs_list]))
 rews_list=pd.concat(rews_list)
 percs_list=pd.concat(percs_list)
-decs_list=pd.concat(decs_list)
-eval_list=pd.concat(eval_list)
+decs_list=pd.concat([subset_df(d,conditions=pd.Series({"timestep":d["timestep"].max()})) for d in decs_list])
+eval_list=pd.concat([subset_df(d,conditions=pd.Series({"timestep":d["timestep"].max()})) for d in eval_list])
 for varname in varnames:
     print("plotting var "+str(varname))
     stats_rews=compute_stats([rews_list],idx=[varname,"algorithm"],columns=["reward"])
     plot_trend(stats_rews,varname,"./plots/rewards_"+str(varname)+".pdf",yname="algorithm",trends=["reward"],xlab="Average value",ylab="Reward",font_size=16)
     # stats_percs=compute_stats([perc_list],idx=[varname,"algorithm"],columns=["value","cost"])
     # plot_trend(stats_percs,varname,"./plots/"+str(test)+"/perceptions_"+str(varname)+".pdf",yname="algorithm")
-    f=functools.partial(subset_df,conditions=pd.Series({"timestep":endtime}))
-    stats_decs=compute_stats([f(decs_list)],idx=[varname,"algorithm"],columns=["contribution","cost","cost_pop","contributed","privacy"])
+    stats_decs=compute_stats([decs_list],idx=[varname,"algorithm"],columns=["contribution","cost","cost_pop","contributed","privacy"])
+    stats_decs["privacy_inv_mean"]=1-stats_decs["privacy_mean"]
+    stats_decs["privacy_inv_ci"]=stats_decs["privacy_ci"]
     plot_trend(stats_decs,varname,"./plots/costs_volunteers_"+str(varname)+".pdf",yname="algorithm",trends=["cost"],xlab="Average value",ylab="Cost for volunteers",font_size=16)
     plot_trend(stats_decs,varname,"./plots/costs_global_"+str(varname)+".pdf",yname="algorithm",trends=["cost_pop"],xlab="Average value",ylab="Cost",font_size=16)
-    plot_trend(stats_decs,varname,"./plots/priv_indiv_"+str(varname)+".pdf",yname="algorithm",trends=["privacy"],xlab="Average value",ylab="Privacy loss",font_size=16)
-    stats_eval=compute_stats([f(eval_list)],idx=[varname,"algorithm"],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
-    plot_trend(stats_eval,varname,"./plots/gini_"+str(varname)+".pdf",yname="algorithm",trends=["gini"],xlab="Average value",ylab="Inequality of contributions",font_size=16)
+    plot_trend(stats_decs,varname,"./plots/priv_inv_"+str(varname)+".pdf",yname="algorithm",trends=["privacy_inv"],xlab="Average value",ylab="Privacy",font_size=16)
+    stats_eval=compute_stats([eval_list],idx=[varname,"algorithm"],columns=["gini","gini_cost","cost_pop","efficiency","social_welfare","success","num_contrib"])
+    stats_eval["gini_inv_mean"]=1-stats_eval["gini_mean"]
+    stats_eval["gini_inv_ci"]=stats_eval["gini_ci"]
+    plot_trend(stats_eval,varname,"./plots/giniinv_"+str(varname)+".pdf",yname="algorithm",trends=["gini_inv"],xlab="Average value",ylab="Equality of contributions",font_size=16)
+    plot_trend(stats_eval,varname,"./plots/ginicost_"+str(varname)+".pdf",yname="algorithm",trends=["gini_cost"],xlab="Average value",ylab="Inequality of contributions",font_size=16)
     plot_trend(stats_eval,varname,"./plots/success_"+str(varname)+".pdf",yname="algorithm",trends=["success"],xlab="Average value",ylab="Success rate",font_size=16)
     plot_trend(stats_eval,varname,"./plots/welfare_"+str(varname)+".pdf",yname="algorithm",trends=["social_welfare"],xlab="Average value",ylab="Social welfare",font_size=16)
     plot_trend(stats_eval,varname,"./plots/eff_"+str(varname)+".pdf",yname="algorithm",trends=["efficiency"],xlab="Average value",ylab="Efficiency",font_size=16)
