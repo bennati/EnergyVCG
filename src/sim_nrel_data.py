@@ -100,9 +100,9 @@ def partition_list(a, k):
 class MeasurementGenNREL(BaseMeasurementGen):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        filename="../datasets/nrel_atlanta_rc/arc_sorted_by_person/final_data.csv.bz2"
-        self.n1=1
-        self.n2=7
+        self.n1=kwargs["n1"]
+        self.n2=kwargs["n2"]
+        filename="../datasets/nrel_atlanta_rc/arc_sorted_by_person/final_data_n"+str(self.n2)+".csv.bz2"
         ## collect the data
         self.data=pd.read_csv(filename)
         self.data=self.data.groupby("ids").apply(lambda x: pd.DataFrame(data={
