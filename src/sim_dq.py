@@ -32,7 +32,7 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
 
     def get_decision(self, perceptions):
         current=self.get_current_state()
-        qvals=self.dqlearner.sess.run(self.dqlearner.q_eval, feed_dict={self.dqlearner.s: [current]})[0]
+        qvals=self.dqlearner.sess.run(self.dqlearner.q_eval, feed_dict={self.dqlearner.keep_prob:0.5,self.dqlearner.s: [current]})[0]
         probs=boltzmann(qvals,0.1)
         try:
         self.act=np.random.choice(range(len(self.actions)),p=probs)
@@ -66,9 +66,6 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
         state=[[perceptions[i]["value"],perceptions[i]["cost"]] for i,_ in pop] # collect in order of agentID, ascending
         state=[i for j in state for i in j] # flatten
         return state
-
-np.random.seed(1)
-tf.set_random_seed(1)
 
 # Deep Q Network off-policy
 class DecisionLogicDQ(BaseDecisionLogic):
