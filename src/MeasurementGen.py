@@ -13,12 +13,13 @@ class BaseMeasurementGen():
 class MeasurementGenUniform(BaseMeasurementGen):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.n1=kwargs["n1"]
-        self.n2=kwargs["n2"]
+        self.n1=int(kwargs["n1"])
+        self.n2=int(kwargs["n2"])
+        self.thresh=int(kwargs["thresh"]*kwargs["N"])
         assert(self.n1>=0)
         assert(self.n2>self.n1)
-        self.n=kwargs["N"]
-        self.t=kwargs["T"]
+        self.n=int(kwargs["N"])
+        self.t=int(kwargs["T"])
         if self.t is None:
             print("setting t to default")
             self.t=1000
@@ -34,9 +35,9 @@ class MeasurementGenUniform(BaseMeasurementGen):
             vals=[np.random.randint(max(1,self.n1),self.n2) for _ in population]
             costs=[np.random.randint(max(1,self.n1),self.n2) for _ in population]
             # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))
-            thresh=len(population) #np.random.randint(1,3)
-            assert(thresh<=sum(vals))
-            ret=[{"value":v,"cost":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]
+            # thresh=len(population) #np.random.randint(1,3)
+            assert(self.thresh<=sum(vals))
+            ret=[{"value":v,"cost":c,"timestep":timestep,"agentID":i,"threshold":self.thresh} for i,(v,c) in enumerate(zip(vals,costs))]
             return ret
 
 class MeasurementGenNormal(BaseMeasurementGen):
