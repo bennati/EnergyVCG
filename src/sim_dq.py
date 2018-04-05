@@ -29,10 +29,12 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
         self.act=self.actions[0]
         # if training:
         #     self.dqlearner.train(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)
+        self.dropout_prob=0.8
 
     def get_decision(self, perceptions):
+        self.dropout_prob=( 0.8 if self.model.schedule.steps>np.ceil(self.model.measurement_fct.t/2.0)-1 else 1.0 )
         current=self.get_current_state()
-        qvals=self.dqlearner.sess.run(self.dqlearner.q_eval, feed_dict={self.dqlearner.keep_prob:0.5,self.dqlearner.s: [current]})[0]
+        qvals=self.dqlearner.sess.run(self.dqlearner.q_eval, feed_dict={self.dqlearner.keep_prob:self.dropout_prob,self.dqlearner.s: [current]})[0]
         probs=boltzmann(qvals,0.1)
         try:
         self.act=np.random.choice(range(len(self.actions)),p=probs)
@@ -48,7 +50,7 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
         # self.reward=np.nanmean(np.array([r[rew_type] for r in reward])[list(self.act)]) # TODO it could be nan
         ## use all rewards
         self.reward=np.mean([r[rew_type] for r in reward])
-        self.dqlearner.learn(current,[0]*2*self.model.N,self.act,self.reward)
+        self.dqlearner.learn(current,[0]*2*self.model.N,self.act,self.reward,kp=self.dropout_prob)
 
     def get_qtable(self):
         ret,l=self.dqlearner.get_qtable()
@@ -76,12 +78,14 @@ class DecisionLogicDQ(BaseDecisionLogic):
         self.actions=[0,1]
         self.dqlearner=DQlearner(self.states,self.actions,gamma=gamma,n_features=2,alpha=alpha,learn_step=10,batch_size=10)
         self.act=1
+        self.dropout_prob=0.8
         if training:
             self.dqlearner.train(self.states)
 
     def get_decision(self, perception):
+        self.dropout_prob=( 0.8 if self.model.model.schedule.steps>np.ceil(self.model.model.measurement_fct.t/2.0)-1 else 1.0 )
         current=self.get_current_state()
-        self.act=self.dqlearner.get_decision(current)
+        self.act=self.dqlearner.get_decision(current,kp=self.dropout_prob)
         assert(self.act in self.actions)
         return self.act
 
@@ -89,7 +93,7 @@ class DecisionLogicDQ(BaseDecisionLogic):
         assert(reward["agentID"]==self.model.unique_id)
         current=self.get_current_state()
         self.reward=reward[rew_type]
-        self.dqlearner.learn(current,[0]*2,self.act,self.reward)
+        self.dqlearner.learn(current,[0]*2,self.act,self.reward,kp=self.dropout_prob)
 
     def get_qtable(self):
         ret,l=self.dqlearner.get_qtable()

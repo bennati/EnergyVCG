@@ -216,18 +216,18 @@ class DQlearner():
                 self.learn(s,[0]*len(s),1,1) # contributing is better
         self.cost_his = []
 
-    def get_decision(self,observation):
+    def get_decision(self,observation,kp=1.0):
         # to have batch dimension when feed into tf placeholder
         # observation = observation[np.newaxis, :]
         if np.random.uniform() < self.epsilon:
             # forward feed the observation and get q value for every actions
-            actions_value = self.sess.run(self.q_eval, feed_dict={self.keep_prob:0.5,self.s: [observation]})
+            actions_value = self.sess.run(self.q_eval, feed_dict={self.keep_prob:kp,self.s: [observation]})
             self.act = np.argmax(actions_value)
         else:
             self.act = np.random.randint(0, self.n_actions)
         return self.act
 
-    def learn(self,state,next_state,action,reward):
+    def learn(self,state,next_state,action,reward,kp=1.0):
         # check to replace target parameters
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.sess.run(self.replace_target_op)
@@ -282,7 +282,7 @@ class DQlearner():
         q_next, q_eval = self.sess.run(
             [self.q_next, self.q_eval],
             feed_dict={
-                    self.keep_prob:0.5,
+                    self.keep_prob:kp,
                 self.s_: s_,  # fixed params
                 self.s: s,  # newest params
             })
@@ -292,7 +292,7 @@ class DQlearner():
         # train eval network
         _, self.cost = self.sess.run([self._train_op, self.loss],
                                      feed_dict={self.s: s,
-                                                    self.keep_prob:0.5,
+                                                    self.keep_prob:kp,
                                                 self.q_target: q_target})
         self.cost_his.append(self.cost)
 
@@ -318,7 +318,7 @@ class DQlearner():
         #     for i in range(len(qvals)):
         #         d.update({i:qvals[i]})
         #     qtab.append(d)
-        qtab=pd.DataFrame(data=[self.sess.run(self.q_eval, feed_dict={self.keep_prob:0.5,self.s: [idx]})[0] for idx in self.states],index=self.states,dtype=np.float32)
+        qtab=pd.DataFrame(data=[self.sess.run(self.q_eval, feed_dict={self.keep_prob:1.0,self.s: [idx]})[0] for idx in self.states],index=self.states,dtype=np.float32)
         # print(qtab)
         return qtab,self.cost_his
 
@@ -326,5 +326,5 @@ class DQlearner():
         # return self.q_count
 
     def get_qvalues(self,state):
-        qvals=self.sess.run(self.q_eval, feed_dict={self.keep_prob:0.5,self.s: [state]})[0]
+        qvals=self.sess.run(self.q_eval, feed_dict={self.keep_prob:1.0,self.s: [state]})[0]
         return qvals
