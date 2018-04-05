@@ -37,7 +37,7 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
         try:
         self.act=np.random.choice(range(len(self.actions)),p=probs)
         except Exception as e:
-            print(probs)
+            print(str(e)+": "+str(sum(probs)))
         act=self.actions[self.act]
         ret=[{"contribution":(a["value"] if act[a["agentID"]] else np.nan),"cost":(a["cost"] if act[a["agentID"]] else np.nan),"privacy":1,"agentID":a["agentID"],"contributed":act[a["agentID"]],"timestep":a["timestep"],"threshold":a["threshold"]} for a in perceptions]
         return ret
