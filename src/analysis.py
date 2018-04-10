@@ -10,7 +10,39 @@ def subset_df(df,conditions=pd.Series()):
         ret.reset_index()
     return ret
 
-tests=[["qlearn_nrel","Decentr."],["mandatory_nrel","Baseline"],["knapsack_nrel","Centr."]]
+def plot_algs(df,xname,filename,trends=None,yname=None,lstyles=['-','--',':','-.'],colors=None,font_size=12,ylab=None,xlab=None):
+    if trends is None:
+        trends=[d[:-5] for d in df.columns if ("_mean" in d)]
+    fig,ax=plt.subplots()
+    ax.set_xlabel(xlab or xname,fontsize=font_size)
+    ax.set_ylabel(ylab or yname,fontsize=font_size)
+    if yname is None:
+        data=[(df,None)]
+    else:
+        data=[(df[df[yname]==i],i) for i in df[yname].unique()]
+    if colors is None:
+        cmap = plt.get_cmap('cubehelix_r')
+        colors=[cmap(float(i+1)/(len(data)+1)) for i in range(len(data))]
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0,
+                     box.width, box.height * 1.1])
+    colorArtists = []
+    for (d,l),c in zip(data,colors):
+        x=d[xname]
+        sty=d["lsty"].unique()[0]
+        colorArtists.append(plt.Line2D((0,1),(0,0), color=c, marker='', linestyle=sty,linewidth=3))
+        for y in trends:
+            lab=(y if l is None else y+"; "+yname+"="+str(l))
+            ax.plot(x,d[y+"_mean"],label=lab,linestyle=sty,color=c,linewidth=3)
+            ax.fill_between(x,np.asarray(d[y+"_mean"])-np.asarray(d[y+"_ci"]),np.asarray(d[y+"_mean"])+np.asarray(d[y+"_ci"]),alpha=0.2,linestyle=sty,facecolor=c,linewidth=3)
+    ax.add_artist(plt.legend(colorArtists,[l for d,l in data],loc='upper center', bbox_to_anchor=(0.5, 1.18),fancybox=True, shadow=True, ncol=len(data),fontsize=font_size))
+    # plt.legend()
+    plt.setp(ax.xaxis.get_majorticklabels(),fontsize=font_size)
+    plt.setp(ax.yaxis.get_majorticklabels(),fontsize=font_size)
+    fig.savefig(filename,format='pdf')
+    plt.close(fig)
+fprefix="nrel"
+tests=[["nrel_mand","Full","--"],["nrel_def","No","--"],["nrel_knap","Cen.","-"],["nrel_Q","Dec.","-"]]
 res_decs=None
 res_percs=None
 res_eval=None
@@ -19,27 +51,32 @@ rews_list=[]
 percs_list=[]
 decs_list=[]
 eval_list=[]
+gini_contribs=[]
 ### generate individual plots
-for test,l in tests:
+for test,l,sty in tests:
     print(test)
     if not os.path.exists("plots/"+str(test)):
         os.makedirs("plots/"+str(test))
     res_decs=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("decisions")])
     # res_decs=pd.read_csv("./data/"+str(test)+"/decisions.csv.gz")
     res_decs["algorithm"]=l
+    res_decs["lsty"]=sty
     res_decs["cost_pop"]=[(0 if np.isnan(i) else i)  for i in res_decs["cost"]]
     decs_list.append(res_decs)
     res_percs=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("perception")])
     # res_percs=pd.read_csv("./data/"+str(test)+"/perceptions.csv.gz")
     res_percs["algorithm"]=l
+    res_decs["lsty"]=sty
     percs_list.append(res_percs)
     res_rews=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("reward")])
     # res_rews=pd.read_csv("./data/"+str(test)+"/rewards.csv.gz")
     res_rews["algorithm"]=l
+    res_decs["lsty"]=sty
     rews_list.append(res_rews)
     res_eval=pd.concat([pd.read_csv(os.path.join("./data/",str(test),f)) for f in os.listdir("./data/"+str(test)) if f.startswith("evaluation")])
     # res_eval=pd.read_csv("./data/"+str(test)+"/evaluation.csv.gz")
     res_eval["algorithm"]=l
+    res_eval["lsty"]=sty
     eval_list.append(res_eval)
     varnames=[v for v in ["N","n1","n2"] if (v in res_eval.columns) and (len(res_eval[v].unique())>1)]
     varvalues=expandgrid({v:res_eval[v].unique() for v in varnames})
@@ -75,10 +112,13 @@ for test,l in tests:
     # varvalues=expandgrid({v:contrib_hist[v].unique() for v in varnames})
     try:
         stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
+        stats_gini_contribs["algorithm"]=l
+        stats_gini_contribs["lsty"]=sty
+        gini_contribs.append(stats_gini_contribs)
     except:
         stats_gini_contribs=None
     print("done reading files")
-    stats_evalt=compute_stats(res_eval,idx=["timestep"],columns=["gini","cost_pop","efficiency","social_welfare","success","num_contrib"])
+    stats_evalt=compute_stats(res_eval,idx=["timestep"],columns=["gini","gini_cost","cost_pop","efficiency","social_welfare","success","num_contrib"])
     plot_measures(stats_evalt,"timestep","./plots/"+str(test)+"/eval_"+str("time")+".pdf")
     ### now move to computing statistics that aggregate on one of the parameters ###
     for varname in varnames:
@@ -118,27 +158,38 @@ rews_list=pd.concat(rews_list)
 percs_list=pd.concat(percs_list)
 decs_list=pd.concat([subset_df(d,conditions=pd.Series({"timestep":d["timestep"].max()})) for d in decs_list])
 eval_list=pd.concat([subset_df(d,conditions=pd.Series({"timestep":d["timestep"].max()})) for d in eval_list])
+gini_contribs=pd.concat(gini_contribs)
 for varname in varnames:
     print("plotting var "+str(varname))
-    stats_rews=compute_stats([rews_list],idx=[varname,"algorithm"],columns=["reward"])
-    plot_trend(stats_rews,varname,"./plots/rewards_"+str(varname)+".pdf",yname="algorithm",trends=["reward"],xlab="Average value",ylab="Reward",font_size=16)
-    # stats_percs=compute_stats([perc_list],idx=[varname,"algorithm"],columns=["value","cost"])
-    # plot_trend(stats_percs,varname,"./plots/"+str(test)+"/perceptions_"+str(varname)+".pdf",yname="algorithm")
-    stats_decs=compute_stats([decs_list],idx=[varname,"algorithm"],columns=["contribution","cost","cost_pop","contributed","privacy"])
+    stats_rews=compute_stats([rews_list],idx=[varname,"algorithm","lsty"],columns=["reward"])
+    plot_algs(stats_rews,varname,"./plots/wtest_rewards_"+str(varname)+".pdf",yname="algorithm",trends=["reward"],xlab="Average value",ylab="Reward",font_size=16)
+    # stats_percs=compute_stats([perc_list],idx=[varname,"algorithm","lsty"],columns=["value","cost"])
+    # plot_algs(stats_percs,varname,"./plots/"+str(test)+"/perceptions_"+str(varname)+".pdf",yname="algorithm")
+    stats_decs=compute_stats([decs_list],idx=[varname,"algorithm","lsty"],columns=["contribution","cost","cost_pop","contributed","privacy"])
     stats_decs["privacy_inv_mean"]=1-stats_decs["privacy_mean"]
     stats_decs["privacy_inv_ci"]=stats_decs["privacy_ci"]
-    plot_trend(stats_decs,varname,"./plots/costs_volunteers_"+str(varname)+".pdf",yname="algorithm",trends=["cost"],xlab="Average value",ylab="Cost for volunteers",font_size=16)
-    plot_trend(stats_decs,varname,"./plots/costs_global_"+str(varname)+".pdf",yname="algorithm",trends=["cost_pop"],xlab="Average value",ylab="Cost",font_size=16)
-    plot_trend(stats_decs,varname,"./plots/priv_inv_"+str(varname)+".pdf",yname="algorithm",trends=["privacy_inv"],xlab="Average value",ylab="Privacy",font_size=16)
-    stats_eval=compute_stats([eval_list],idx=[varname,"algorithm"],columns=["gini","gini_cost","cost_pop","efficiency","social_welfare","success","num_contrib"])
+    plot_algs(stats_decs,varname,"./plots/"+fprefix+"_costs_volunteers_"+str(varname)+".pdf",yname="algorithm",trends=["cost"],xlab="Average value",ylab="Cost for volunteers",font_size=16)
+    plot_algs(stats_decs,varname,"./plots/"+fprefix+"_costs_global_"+str(varname)+".pdf",yname="algorithm",trends=["cost_pop"],xlab="Average value",ylab="Cost",font_size=16)
+    plot_algs(stats_decs,varname,"./plots/"+fprefix+"_priv_inv_"+str(varname)+".pdf",yname="algorithm",trends=["privacy_inv"],xlab="Average value",ylab="Privacy",font_size=16)
+    stats_eval=compute_stats([eval_list],idx=[varname,"algorithm","lsty"],columns=["gini","gini_cost","cost_pop","efficiency","social_welfare","success","num_contrib"])
     stats_eval["gini_inv_mean"]=1-stats_eval["gini_mean"]
     stats_eval["gini_inv_ci"]=stats_eval["gini_ci"]
-    plot_trend(stats_eval,varname,"./plots/giniinv_"+str(varname)+".pdf",yname="algorithm",trends=["gini_inv"],xlab="Average value",ylab="Equality of contributions",font_size=16)
-    plot_trend(stats_eval,varname,"./plots/ginicost_"+str(varname)+".pdf",yname="algorithm",trends=["gini_cost"],xlab="Average value",ylab="Inequality of contributions",font_size=16)
-    plot_trend(stats_eval,varname,"./plots/success_"+str(varname)+".pdf",yname="algorithm",trends=["success"],xlab="Average value",ylab="Success rate",font_size=16)
-    plot_trend(stats_eval,varname,"./plots/welfare_"+str(varname)+".pdf",yname="algorithm",trends=["social_welfare"],xlab="Average value",ylab="Social welfare",font_size=16)
-    plot_trend(stats_eval,varname,"./plots/eff_"+str(varname)+".pdf",yname="algorithm",trends=["efficiency"],xlab="Average value",ylab="Efficiency",font_size=16)
-    # plot_trend(stats_eval,varname,"./plots/priv_"+str(varname)+".pdf",yname="algorithm",trends=["privacy"])
+    plot_algs(stats_eval,varname,"./plots/"+fprefix+"_giniinv_"+str(varname)+".pdf",yname="algorithm",trends=["gini_inv"],xlab="Average value",ylab="Equality of contributions",font_size=16)
+    plot_algs(stats_eval,varname,"./plots/"+fprefix+"_ginicost_"+str(varname)+".pdf",yname="algorithm",trends=["gini_cost"],xlab="Average value",ylab="Inequality of contributions",font_size=16)
+    plot_algs(stats_eval,varname,"./plots/"+fprefix+"_success_"+str(varname)+".pdf",yname="algorithm",trends=["success"],xlab="Average value",ylab="Success rate",font_size=16)
+    plot_algs(stats_eval,varname,"./plots/"+fprefix+"_welfare_"+str(varname)+".pdf",yname="algorithm",trends=["social_welfare"],xlab="Average value",ylab="Social welfare",font_size=16)
+    plot_algs(stats_eval,varname,"./plots/"+fprefix+"_eff_"+str(varname)+".pdf",yname="algorithm",trends=["efficiency"],xlab="Average value",ylab="Efficiency",font_size=16)
+    # plot_algs(stats_eval,varname,"./plots/priv_"+str(varname)+".pdf",yname="algorithm",trends=["privacy"])
+    stats_gini=compute_stats([gini_contribs],[varname,"algorithm","lsty"],columns=["Contributors","Values","cost"]) # average across repetitions
+    stats_gini["contr_inv_mean"]=1-stats_gini["Contributors_mean"]
+    stats_gini["contr_inv_ci"]=stats_gini["Contributors_ci"]
+    stats_gini["val_inv_mean"]=1-stats_gini["Values_mean"]
+    stats_gini["val_inv_ci"]=stats_gini["Values_ci"]
+    stats_gini["cost_inv_mean"]=1-stats_gini["cost_mean"]
+    stats_gini["cost_inv_ci"]=stats_gini["cost_ci"]
+    plot_algs(stats_gini,varname,"./plots/"+fprefix+"_ginihist_"+str(varname)+".pdf",yname="algorithm",trends=["contr_inv"],xlab="Population size",ylab="No. of contributions",font_size=16)
+    plot_algs(stats_gini,varname,"./plots/"+fprefix+"_ginihistval_"+str(varname)+".pdf",yname="algorithm",trends=["val_inv"],xlab="Population size",ylab="Contribution values",font_size=16)
+    plot_algs(stats_gini,varname,"./plots/"+fprefix+"_ginihistcost_"+str(varname)+".pdf",yname="algorithm",trends=["cost_inv"],xlab="Population size",ylab="Contribution costs",font_size=16)
 
 ## clean up memory
 del res_decs,res_rews,res_percs,res_eval,rews_list,percs_list,decs_list,eval_list
