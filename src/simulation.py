@@ -77,7 +77,7 @@ def compute_qtabs(n,p,model):
 #         qtab=qtab+[compute_qtabs(n,p,model)]
 #     return log,qtab
 
-def body(n,conf,test):
+def body(n,conf,test,datadir):
     np.random.seed(n)
     tf.set_random_seed(np.random.uniform(n))
     print("repetition: "+str(n))
@@ -89,15 +89,15 @@ def body(n,conf,test):
         f=functools.partial(conf["meas_fct"],**params)
         model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
         model.run(params=params)
-        res_decs=pd.concat([res_decs,save_result(test,params,model.log)])
-        save_qtab(test,compute_qtabs(n,p,model),params)
+        res_decs=pd.concat([res_decs,save_result(datadir,test,params,model.log)])
+        save_qtab(datadir,test,compute_qtabs(n,p,model),params)
     return res_decs
 
-def save_result(test,params,log):
+def save_result(datadir,test,params,log):
     res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log])
-    res_decs.to_csv("./data/"+str(test)+"/decisions_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
+    res_decs.to_csv(os.path.join(datadir,str(test),"decisions_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz"),index=False,compression='gzip')
     for l in ["perception","reward","evaluation"]:
-        pd.concat([pd.DataFrame(i[l]) for i in log]).to_csv("./data/"+str(test)+"/"+str(l)+"_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
+        pd.concat([pd.DataFrame(i[l]) for i in log]).to_csv(os.path.join(datadir,str(test),str(l)+"_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz"),index=False,compression='gzip')
     return res_decs
 
 # def save_qtabs(test,qtables):
@@ -113,7 +113,7 @@ def save_result(test,params,log):
 #         qtables.to_csv("./data/"+str(test)+"/qtables.csv.gz",index=False,compression='gzip')
 #         del qtables
 
-def save_qtab(test,qtabs,params):
+def save_qtab(datadir,test,qtabs,params):
     qtab=qtabs[0]
     losses=qtabs[1]
     if qtab is not None and not qtab.empty:
@@ -123,38 +123,38 @@ def save_qtab(test,qtabs,params):
         qtab.drop("index",axis=1,inplace=True)
         if all([i in qtab.columns for i in ["yes","no"]]):
             qtab["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtab.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
-        qtab.to_csv("./data/"+str(test)+"/qtab_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
+        qtab.to_csv(os.path.join(datadir,str(test),"qtab_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz"),index=False,compression='gzip')
     if losses is not None and not losses.empty:
-        losses.to_csv("./data/"+str(test)+"/loss_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz",index=False,compression='gzip')
+        losses.to_csv(os.path.join(datadir,str(test),"loss_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz"),index=False,compression='gzip')
 
-def save_stats(test,conf,res_decs):
+def save_stats(datadir,test,conf,res_decs):
     # compute statistics for all tables in log file
     varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
     ### prepare tables ###
     if varnames:
         contrib_hist=compute_contrib_hist(res_decs,varnames)
-        contrib_hist.to_csv("./data/"+str(test)+"/contrib_hist.csv.gz",index=False,compression='gzip')
-        #contrib_hist=pd.read_csv("./data/contrib_hist.csv.gz")
+        contrib_hist.to_csv(os.path.join(datadir,str(test),"contrib_hist.csv.gz"),index=False,compression='gzip')
+        #contrib_hist=pd.read_csv(os.path.join(datadir,"contrib_hist.csv.gz"))
         # stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
         del contrib_hist
         # aggregate over all agent ids and compute gini coefficients
         stats_gini_contribs=res_decs.groupby(varnames+["agentID","repetition"],as_index=False).agg({"contributed":np.sum,"contribution":np.sum,"cost":np.sum}) # sum up all contributions in each simulation (over all timesteps)
         stats_gini_contribs=stats_gini_contribs.groupby(varnames+["repetition"],as_index=False).agg({"contributed":gini,"contribution":gini,"cost":gini}) # compute gini coefficient across agents
         stats_gini_contribs=stats_gini_contribs.rename(columns={"contributed":"Contributors","contribution":"Values"})
-        stats_gini_contribs.to_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz",index=False,compression='gzip')
+        stats_gini_contribs.to_csv(os.path.join(datadir,str(test),"stats_gini_contribs.csv.gz"),index=False,compression='gzip')
         del stats_gini_contribs
-    #stats_gini_contribs=pd.read_csv("./data/"+str(test)+"/stats_gini_contribs.csv.gz")
+    #stats_gini_contribs=pd.read_csv(os.path.join(datadir,str(test),"stats_gini_contribs.csv.gz"))
 
-def run_experiment_par(test,conf):
+def run_experiment_par(test,conf,datadir):
     print("starting "+str(test))
-    if not os.path.exists("data/"+str(test)):
-        os.makedirs("data/"+str(test))
+    if not os.path.exists(os.path.join(datadir,test)):
+        os.makedirs(os.path.join(datadir,test))
     # empty dir
-    for files in os.listdir("data/"+str(test)):
-        f=os.path.join("data",str(test),files)
+    for files in os.listdir(os.path.join(datadir,test)):
+        f=os.path.join(datadir,str(test),files)
         if os.path.isfile(f):
             os.unlink(f)
-    part_fun=functools.partial(body,conf=conf,test=test)
+    part_fun=functools.partial(body,conf=conf,test=test,datadir=datadir)
     if __name__ == '__main__':
         print("starting processes")
         pool=Pool()
@@ -168,15 +168,15 @@ def run_experiment_par(test,conf):
     ## save results
     # res_decs=save_results(test,log_tot)
     # save_qtabs(test,qtables)
-    save_stats(test,conf,pd.concat(ans))
+    save_stats(datadir,test,conf,pd.concat(ans))
 
-def run_experiment(test,conf):
+def run_experiment(test,conf,datadir):
     print("starting "+str(test))
-    if not os.path.exists("data/"+str(test)):
-        os.makedirs("data/"+str(test))
+    if not os.path.exists(os.path.join(datadir,test)):
+        os.makedirs(os.path.join(datadir,test))
     # empty dir
-    for files in os.listdir("data/"+str(test)):
-        f=os.path.join("data",str(test),files)
+    for files in os.listdir(os.path.join(datadir,test)):
+        f=os.path.join(datadir,str(test),files)
         if os.path.isfile(f):
             os.unlink(f)
     # log_tot=[]
@@ -194,13 +194,13 @@ def run_experiment(test,conf):
             # log_tot=log_tot+model.log # concatenate lists
             ## save intermediate results
             # res_decs=save_results(test,log_tot)
-            res_decs=pd.concat([res_decs,save_result(test,params,model.log)])
+            res_decs=pd.concat([res_decs,save_result(datadir,test,params,model.log)])
             ## compute qtables
-            save_qtab(test,compute_qtabs(r,p,model),params)
+            save_qtab(datadir,test,compute_qtabs(r,p,model),params)
             # qtab_list=qtab_list+[compute_qtabs(r,p,model)]
             # save_qtabs(test,qtab_list)
     # compute statistics for all tables in log file
-    save_stats(test,conf,res_decs)
+    save_stats(datadir,test,conf,res_decs)
 
 if __name__ == '__main__':
     tests={"qlearn":{"T":1000,"reps":3,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicQlearn,"rew_fct":RewardLogicUniform}}#
@@ -208,5 +208,5 @@ if __name__ == '__main__':
     # tests={"mandatory":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
     # tests={"knapsack":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorKnapsack,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
     for test,conf in tests.items():
-        run_experiment_par(test,conf)
+        run_experiment_par(test,conf,"data")
     test,conf=list(tests.items())[0]
