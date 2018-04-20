@@ -195,8 +195,7 @@ class BaseSupervisor(Model):
         Args:
         T: the simulation length
         """
-        while(self.current_state["perception"] is not None):
-            self.step()
+        while(self.step() is not None):
             self.get_log(params=params)
 
     def evaluate(self,decisions,rewards=None,threshold=None):
@@ -240,13 +239,13 @@ class BaseSupervisor(Model):
 
     def step(self):
         # update state
-        self.current_state.update({"timestep":self.schedule.steps})
         perception=self.perception_dict(self.schedule.steps) # generate measurements
         self.current_state.update({"perception":perception}) # generate measurements
         if perception is None:
             print("no more data input, terminating at time "+str(self.schedule.steps))
             return None
         else:
+            self.current_state.update({"timestep":self.schedule.steps})
             thresh=max([p["threshold"] for p in perception])
             self.perception()               # communicate them to agents
             self.schedule.step()    # agents decide
