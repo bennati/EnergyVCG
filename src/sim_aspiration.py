@@ -8,7 +8,7 @@ class DecisionLogicAspiration(BaseDecisionLogic):
     """
     Aspiration learning
     """
-    def __init__(self,model):
+    def __init__(self,model,**kvargs):
         super().__init__(model)
         self.act=0
         self.aspir_lvl=0.0

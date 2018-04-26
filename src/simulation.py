@@ -77,7 +77,7 @@ def compute_qtabs(n,p,model):
 #         qtab=qtab+[compute_qtabs(n,p,model)]
 #     return log,qtab
 
-def body(n,conf,test,datadir):
+def body(n,conf,test,datadir,gamma=0.0,alpha=0.001):
     np.random.seed(n)
     tf.set_random_seed(np.random.uniform(n))
     print("repetition: "+str(n))
@@ -87,7 +87,7 @@ def body(n,conf,test,datadir):
         print(params)
         params.update({"repetition":n,"T":conf["T"]})
         f=functools.partial(conf["meas_fct"],**params)
-        model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
+        model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent,alpha=conf["A"],gamma=conf["G"])
         model.run(params=params)
         res_decs=pd.concat([res_decs,save_result(datadir,test,params,model.log)])
         save_qtab(datadir,test,compute_qtabs(n,p,model),params)
@@ -154,7 +154,7 @@ def run_experiment_par(test,conf,datadir):
         f=os.path.join(datadir,str(test),files)
         if os.path.isfile(f):
             os.unlink(f)
-    part_fun=functools.partial(body,conf=conf,test=test,datadir=datadir)
+    part_fun=functools.partial(body,conf=conf,test=test,datadir=datadir,alpha=conf["A"],gamma=conf["G"])
     if __name__ == '__main__':
         print("starting processes")
         pool=Pool()
@@ -189,7 +189,7 @@ def run_experiment(test,conf,datadir):
             print(params)
             params.update({"repetition":r,"T":conf["T"]})
             f=functools.partial(conf["meas_fct"],**params)
-            model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent)
+            model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent,alpha=conf["A"],gamma=conf["G"])
             model.run(params=params)
             # log_tot=log_tot+model.log # concatenate lists
             ## save intermediate results

@@ -8,10 +8,11 @@ from RewardLogic import BaseRewardLogic
 from EvaluationLogic import BaseEvaluationLogic
 from mesa.time import RandomActivation
 from utils import *
+import functools
 
 class BaseSupervisor(Model):
 
-    def __init__(self,N,measurement_fct=BaseMeasurementGen,decision_fct=BaseDecisionLogic,agent_decision_fct=BaseDecisionLogic,reward_fct=BaseRewardLogic,evaluation_fct=BaseEvaluationLogic,agent_type=BaseAgent,T=0):
+    def __init__(self,N,measurement_fct=BaseMeasurementGen,decision_fct=BaseDecisionLogic,agent_decision_fct=BaseDecisionLogic,reward_fct=BaseRewardLogic,evaluation_fct=BaseEvaluationLogic,agent_type=BaseAgent,T=0,gamma=0.0,alpha=0.001):
         super().__init__()
         # parameters
         self.measurement_fct=measurement_fct()
@@ -23,10 +24,10 @@ class BaseSupervisor(Model):
         # self.T=int(T)
         if self.N<=0:
             raise AssertionError("Initializing empty population")
-        self.decision_fct=decision_fct(self)
+        self.decision_fct=decision_fct(self,gamma=gamma,alpha=alpha)
         self.reward_fct=reward_fct(self)
         self.evaluation_fct=evaluation_fct()
-        self.agent_decision_fct=agent_decision_fct # keep it a class as it will be instanciated in the agent init
+        self.agent_decision_fct=functools.partial(agent_decision_fct,gamma=gamma,alpha=alpha) # keep it a class as it will be instanciated in the agent init
         self.agent_type=agent_type
         self.log=[]
         self.schedule = RandomActivation(self)

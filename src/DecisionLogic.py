@@ -1,7 +1,7 @@
 import numpy as np
 class BaseDecisionLogic():
 
-    def __init__(self,model):
+    def __init__(self,model,**kwargs):
         np.random.seed()
         self.act=None
         self.model=model
