@@ -27,7 +27,7 @@ class RewardLogicUniform(BaseRewardLogic):
         thresh=max([p["threshold"] for p in decisions])
         contribs=np.sum([d["contribution"] for d in decisions if d["contributed"]])
         outcome=success(thresh,contribs)
-        self.last_gini=gini([d["contribution"] for d in decisions])
+        self.last_gini=gini([d["contributed"] for d in decisions])
         # print("gini for contributions "+str([d["contributed"] for d in decisions])+" is "+str(self.last_gini))
         # self.last_gini=int(renormalize(self.last_gini,[0,1],[0,gini_bin_no])) # binarize
         costs=np.array([(d["cost"] if d["contributed"] else 0) for d in decisions])

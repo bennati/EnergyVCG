@@ -109,17 +109,17 @@ def efficiency(thresh,tot_contrib):
     """
     return (np.nan if tot_contrib==0 else ((thresh/tot_contrib) if tot_contrib>=thresh else 0))
 
-def efficiency_mean(efficiencies):
-    """
-    Returns the mean efficiency over time
-    Args:
-    efficiencies: a list of efficiency values
-    Returns:
-    A float representing the mean efficiency (among all successful rounds) or 0 if there were no successful rounds
-    """
-    assert(all(np.array(efficiencies)<=1))
-    vals=[i for i in efficiencies if i>0]
-    return 0 if len(vals)==0 else np.mean(vals)
+# def efficiency_mean(efficiencies):
+#     """
+#     Returns the mean efficiency over time
+#     Args:
+#     efficiencies: a list of efficiency values
+#     Returns:
+#     A float representing the mean efficiency (among all successful rounds) or 0 if there were no successful rounds
+#     """
+#     assert(all(np.array(efficiencies)<=1))
+#     vals=[i for i in efficiencies if i>0]
+#     return 0 if len(vals)==0 else np.mean(vals)
 
 def cost(costs):
     """
