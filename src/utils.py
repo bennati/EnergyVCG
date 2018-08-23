@@ -109,17 +109,17 @@ def efficiency(thresh,tot_contrib):
     """
     return (np.nan if tot_contrib==0 else ((thresh/tot_contrib) if tot_contrib>=thresh else 0))
 
-def efficiency_mean(efficiencies):
-    """
-    Returns the mean efficiency over time
-    Args:
-    efficiencies: a list of efficiency values
-    Returns:
-    A float representing the mean efficiency (among all successful rounds) or 0 if there were no successful rounds
-    """
-    assert(all(np.array(efficiencies)<=1))
-    vals=[i for i in efficiencies if i>0]
-    return 0 if len(vals)==0 else np.mean(vals)
+# def efficiency_mean(efficiencies):
+#     """
+#     Returns the mean efficiency over time
+#     Args:
+#     efficiencies: a list of efficiency values
+#     Returns:
+#     A float representing the mean efficiency (among all successful rounds) or 0 if there were no successful rounds
+#     """
+#     assert(all(np.array(efficiencies)<=1))
+#     vals=[i for i in efficiencies if i>0]
+#     return 0 if len(vals)==0 else np.mean(vals)
 
 def cost(costs):
     """
@@ -364,7 +364,7 @@ def plot_qtable_hist(qtab,filename,xcol,ycol,valcol,title):
     for i,(c,v) in expandgrid({'c':ys,'v':xs}).iterrows():
         q_state=qtab[(qtab[xcol]==v) & (qtab[ycol]==c)] # subset with current state
         hist=q_state[valcol].value_counts().sort_index()
-        assert(sum(hist)==q_state["N"].max()*(q_state["repetition"].max()+1)) # the number of rows corresponds to pop size * repetitions
+        # assert(sum(hist)==q_state["N"].max()*(q_state["repetition"].max()+1)) # the number of rows corresponds to pop size * repetitions
         hist/=sum(hist)         # normalize
         #a=hist.plot.bar(ax=ax[i//len(xs)][i%len(xs)])                ## todo check that order of plots is correct
         ax[i//len(xs)][i%len(xs)].bar(x=hist.index,height=hist,width=0.1)

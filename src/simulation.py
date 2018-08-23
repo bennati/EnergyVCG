@@ -127,7 +127,7 @@ def save_qtab(datadir,test,qtabs,params):
     if losses is not None and not losses.empty:
         losses.to_csv(os.path.join(datadir,str(test),"loss_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz"),index=False,compression='gzip')
 
-def save_stats(datadir,test,conf,res_decs):
+def save_stats(datadir,test,conf,res_decs,time_min=3000):
     # compute statistics for all tables in log file
     varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
     ### prepare tables ###
@@ -138,7 +138,7 @@ def save_stats(datadir,test,conf,res_decs):
         # stats_contrib_hist2=compute_stats(contrib_hist,idx=varnames+["value"],columns=["cnt"])
         del contrib_hist
         # aggregate over all agent ids and compute gini coefficients
-        stats_gini_contribs=res_decs.groupby(varnames+["agentID","repetition"],as_index=False).agg({"contributed":np.sum,"contribution":np.sum,"cost":np.sum}) # sum up all contributions in each simulation (over all timesteps)
+        stats_gini_contribs=res_decs[res_decs["timestep"]>time_min].groupby(varnames+["agentID","repetition"],as_index=False).agg({"contributed":np.sum,"contribution":np.sum,"cost":np.sum}) # sum up all contributions in each simulation (over all timesteps)
         stats_gini_contribs=stats_gini_contribs.groupby(varnames+["repetition"],as_index=False).agg({"contributed":gini,"contribution":gini,"cost":gini}) # compute gini coefficient across agents
         stats_gini_contribs=stats_gini_contribs.rename(columns={"contributed":"Contributors","contribution":"Values"})
         stats_gini_contribs.to_csv(os.path.join(datadir,str(test),"stats_gini_contribs.csv.gz"),index=False,compression='gzip')
@@ -161,14 +161,7 @@ def run_experiment_par(test,conf,datadir):
         ans=pool.map(part_fun,range(conf["reps"]))
     else:
         ans=map(part_fun,range(conf["reps"]))
-    # log_tot,qtables=zip(*ans)
-    # flatten
-    # log_tot=[i for sl in log_tot for i in sl]
-    # qtables=[i for sl in qtables for i in sl]
-    ## save results
-    # res_decs=save_results(test,log_tot)
-    # save_qtabs(test,qtables)
-    save_stats(datadir,test,conf,pd.concat(ans))
+    # save_stats(datadir,test,conf,pd.concat(ans))
 
 def run_experiment(test,conf,datadir):
     print("starting "+str(test))
@@ -191,22 +184,9 @@ def run_experiment(test,conf,datadir):
             f=functools.partial(conf["meas_fct"],**params)
             model=BaseSupervisor(params["N"],measurement_fct=f,decision_fct=conf["dec_fct_sup"],agent_decision_fct=conf["dec_fct"],reward_fct=conf["rew_fct"],agent_type=BaseAgent,alpha=conf["A"],gamma=conf["G"])
             model.run(params=params)
-            # log_tot=log_tot+model.log # concatenate lists
             ## save intermediate results
-            # res_decs=save_results(test,log_tot)
             res_decs=pd.concat([res_decs,save_result(datadir,test,params,model.log)])
             ## compute qtables
             save_qtab(datadir,test,compute_qtabs(r,p,model),params)
-            # qtab_list=qtab_list+[compute_qtabs(r,p,model)]
-            # save_qtabs(test,qtab_list)
     # compute statistics for all tables in log file
-    save_stats(datadir,test,conf,res_decs)
-
-if __name__ == '__main__':
-    tests={"qlearn":{"T":1000,"reps":3,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicQlearn,"rew_fct":RewardLogicUniform}}#
-    #tests={"aspiration":{"T":100,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,3,4,5,6,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorEmpty,"dec_fct":DecisionLogicAspiration,"rew_fct":RewardLogicUniformAspir}}
-    # tests={"mandatory":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorMandatory,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
-    # tests={"knapsack":{"T":50,"reps":10,"params":{"N":[10,20,30],"n1":[0],"n2":[2,5,8]},"meas_fct":MeasurementGenUniform,"dec_fct_sup":DecisionLogicSupervisorKnapsack,"dec_fct":DecisionLogicEmpty,"rew_fct":RewardLogicUniform}}
-    for test,conf in tests.items():
-        run_experiment_par(test,conf,"data")
-    test,conf=list(tests.items())[0]
+    # save_stats(datadir,test,conf,res_decs)

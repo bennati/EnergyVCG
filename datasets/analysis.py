@@ -210,6 +210,7 @@ def plot_trend(df,xname,filename,trends=None,yname=None):
     fig.savefig(filename,format='pdf')
     plt.close(fig)
 
+n2s=[3,4,6,8,9,10]
 datadir="./"
 dataset=os.path.join(datadir,"nrel_atlanta_rc","arc_sorted_by_person")
 # datadir=os.path.join(basedir,d,str(l),"vis")
@@ -298,7 +299,7 @@ else:
         for c in cols2keep: # bring over columns from df
             data.update({c:pd.DataFrame(df)[c]})
         return pd.DataFrame(data=data)
-    for n2 in [2,5,7]:
+    for n2 in n2s:
         filename=os.path.join(dataset,"final_data_n"+str(n2)+".csv.bz2")
         if not os.path.exists(filename):
             print(filename+" not found")

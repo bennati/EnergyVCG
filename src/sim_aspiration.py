@@ -8,7 +8,7 @@ class DecisionLogicAspiration(BaseDecisionLogic):
     """
     Aspiration learning
     """
-    def __init__(self,model,**kvargs):
+    def __init__(self,model,**kwargs):
         super().__init__(model)
         self.act=0
         self.aspir_lvl=0.0
@@ -44,7 +44,7 @@ class DecisionLogicAspiration(BaseDecisionLogic):
     #     return 0            # the first and only choice had weight 0
 
     def get_decision(self,perceptions):
-        # print("agent "+str(self.model.unique_id)+" updates action with prob "+str(self.phi(self.delta)))
+        #print("agent "+str(self.model.unique_id)+" updates action with prob "+str(self.phi(self.delta)))
         if np.random.random()<1-self.phi(self.delta):
             # choose a random action other than the selected one
             rand_act=copy(self.actions)
