@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
 from mesa import Model
-from Agent import *
-from MeasurementGen import BaseMeasurementGen
-from DecisionLogic import BaseDecisionLogic
-from RewardLogic import BaseRewardLogic
-from EvaluationLogic import BaseEvaluationLogic
+from src.Agent import *
+from src.MeasurementGen import BaseMeasurementGen
+from src.DecisionLogic import BaseDecisionLogic
+from src.RewardLogic import BaseRewardLogic
+from src.EvaluationLogic import BaseEvaluationLogic
 from mesa.time import RandomActivation
-from utils import *
+from src.utils import *
 
 class BaseSupervisor(Model):
 
@@ -91,9 +91,12 @@ class BaseSupervisor(Model):
         """
         if perceptions is None:
             perceptions=self.current_state["perception"]
+        partner = self.partner_set()
         decisions=self.decision_fct.get_decision(perceptions) # call own decision fct
         return decisions
 
+    def partner_set(self):
+        return self.decision_fct.get_partner()
 
     def __learn(self,perceptions,reward):
         """
@@ -170,11 +173,6 @@ class BaseSupervisor(Model):
         """
         if perceptions is None:
             perceptions=self.current_state["perception"]
-        # debug
-        tmp=pd.merge(pd.DataFrame(perceptions),pd.DataFrame(decisions),on=["agentID"])
-        # assert(((tmp["value"] == tmp["contribution"]) | np.isnan(tmp["contribution"])).all())
-        # assert(((tmp["cost_x"] == tmp["cost_y"]) | np.isnan(tmp["cost_y"])).all())
-            # assert(all([p["cost"]==d["cost"] for p,d in zip(self.current_state["perception"],decisions)]))
         if rewards is None or len(rewards)!=self.N:
             if rewards is not None and len(rewards)!=self.N:
                 print("Warning: invalid rewards provided, computing new ones")
@@ -208,6 +206,8 @@ class BaseSupervisor(Model):
         Returns:
         A list of measures on the population behavior
         """
+        if threshold is None:
+            threshold=1
         if rewards is None:
             assert(self.current_state["reward"] is not None)
             rewards=self.current_state["reward"]

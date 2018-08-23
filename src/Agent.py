@@ -1,6 +1,6 @@
 import numpy as np
 from mesa import Agent
-from DecisionLogic import *
+from src.DecisionLogic import *
 
 class BaseAgent(Agent):
     """
