@@ -123,6 +123,11 @@ def save_qtab(datadir,test,qtabs,params):
          # transform the index to two separate columns
         qtab["state_val"]=qtab["index"].transform(lambda x: x[0])
         qtab["state_cost"]=qtab["index"].transform(lambda x: x[1])
+        try:
+            qtab["hist_contributed"]=qtab["index"].transform(lambda x: x[2])
+            qtab["avg_hist_contributed"]=qtab["index"].transform(lambda x: x[3])
+        except:
+            print("History not found")
         qtab.drop("index",axis=1,inplace=True)
         if all([i in qtab.columns for i in ["yes","no"]]):
             qtab["prob"]=[boltzmann([r[1]["yes"],r[1]["no"]],0.1)[0] for r in qtab.iterrows()] # normalize qvalues, prob is the probability of contributing using the boltzmann equation
