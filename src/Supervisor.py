@@ -20,7 +20,7 @@ class BaseSupervisor(Model):
             print("warning, setting N according to what provided by measurement fct")
             self.N=self.measurement_fct.n
         else:
-        self.N=int(N)
+            self.N=int(N)
         # self.T=int(T)
         if self.N<=0:
             raise AssertionError("Initializing empty population")
@@ -123,14 +123,14 @@ class BaseSupervisor(Model):
         if measurements is None:
             return None
         else:
-        pdict=[]
-        for i,m in zip(range(len(measurements)),measurements):
-            d=m.copy()
-            # d.update({"agentID":i})
-            # add here any extra information to give to the agents
-            pdict.append(d)
+            pdict=[]
+            for i,m in zip(range(len(measurements)),measurements):
+                d=m.copy()
+                # d.update({"agentID":i})
+                # add here any extra information to give to the agents
+                pdict.append(d)
                 del d
-        return pdict
+            return pdict
 
     def perception(self,perceptions=None):
         """
@@ -248,12 +248,12 @@ class BaseSupervisor(Model):
             return None
         else:
             self.current_state.update({"timestep":self.schedule.steps})
-        thresh=max([p["threshold"] for p in perception])
-        self.perception()               # communicate them to agents
-        self.schedule.step()    # agents decide
-        decisions=self.decisions(perception) # collect decisions
-        self.current_state.update({"decisions":decisions}) # collect decisions
-        self.current_state.update({"reward":self.feedback(decisions)})
-        self.current_state.update({"evaluation":self.evaluate(decisions,threshold=thresh)})
+            thresh=max([p["threshold"] for p in perception])
+            self.perception()               # communicate them to agents
+            self.schedule.step()    # agents decide
+            decisions=self.decisions(perception) # collect decisions
+            self.current_state.update({"decisions":decisions}) # collect decisions
+            self.current_state.update({"reward":self.feedback(decisions)})
+            self.current_state.update({"evaluation":self.evaluate(decisions,threshold=thresh)})
             return 1
         #self.__log()

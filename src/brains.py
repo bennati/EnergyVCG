@@ -126,8 +126,8 @@ class DQlearner():
         self.learn_step_counter = 0
         self.learn_step=learn_step
         if self.batch_size>1:
-        # initialize zero memory [s, a, r, s_]
-        self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
+            # initialize zero memory [s, a, r, s_]
+            self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
 
         # consist of [target_net, evaluate_net]
         self.g_1 = tf.Graph()
@@ -211,7 +211,7 @@ class DQlearner():
         Pretrain the network to contribute
         """
         for s in states:
-        for _ in range(100):
+            for _ in range(100):
                 self.learn(s,[0]*len(s),0,0)
                 self.learn(s,[0]*len(s),1,1) # contributing is better
         self.cost_his = []
@@ -236,65 +236,65 @@ class DQlearner():
             self.store_transition(state,action,reward,next_state)
         if self.learn_step_counter % self.learn_step==0:
             if self.batch_size>1:
-            # sample batch memory from all memory
-            if self.memory_counter > self.memory_size:
-                sample_index = np.random.choice(self.memory_size, size=self.batch_size)
+                # sample batch memory from all memory
+                if self.memory_counter > self.memory_size:
+                    sample_index = np.random.choice(self.memory_size, size=self.batch_size)
+                else:
+                    sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
+                batch_memory = self.memory[sample_index, :]
+                s_=batch_memory[:, -self.n_features:]
+                s=batch_memory[:, :self.n_features]
+                batch_index = np.arange(self.batch_size, dtype=np.int32)
+                eval_act_index = batch_memory[:, self.n_features].astype(int)
+                reward = batch_memory[:, self.n_features + 1]
+                # print("state "+str(self.get_current_state_int()[0])+" has Q "+str(q_target[batch_index,:])+". updating action "+str(self.act)+" with reward "+str(reward))
+                """
+                For example in this batch I have 2 samples and 3 actions:
+                q_eval =
+                [[1, 2, 3],
+                 [4, 5, 6]]
+
+                q_target = q_eval =
+                [[1, 2, 3],
+                 [4, 5, 6]]
+
+                Then change q_target with the real q_target value w.r.t the q_eval's action.
+                For example in:
+                    sample 0, I took action 0, and the max q_target value is -1;
+                    sample 1, I took action 2, and the max q_target value is -2:
+                q_target =
+                [[-1, 2, 3],
+                 [4, 5, -2]]
+
+                So the (q_target - q_eval) becomes:
+                [[(-1)-(1), 0, 0],
+                 [0, 0, (-2)-(6)]]
+
+                We then backpropagate this error w.r.t the corresponding action to network,
+                leave other action as error=0 cause we didn't choose it.
+                """
             else:
-                sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
-            batch_memory = self.memory[sample_index, :]
-            s_=batch_memory[:, -self.n_features:]
-            s=batch_memory[:, :self.n_features]
-            batch_index = np.arange(self.batch_size, dtype=np.int32)
-            eval_act_index = batch_memory[:, self.n_features].astype(int)
-            reward = batch_memory[:, self.n_features + 1]
-            # print("state "+str(self.get_current_state_int()[0])+" has Q "+str(q_target[batch_index,:])+". updating action "+str(self.act)+" with reward "+str(reward))
-            """
-            For example in this batch I have 2 samples and 3 actions:
-            q_eval =
-            [[1, 2, 3],
-             [4, 5, 6]]
-
-            q_target = q_eval =
-            [[1, 2, 3],
-             [4, 5, 6]]
-
-            Then change q_target with the real q_target value w.r.t the q_eval's action.
-            For example in:
-                sample 0, I took action 0, and the max q_target value is -1;
-                sample 1, I took action 2, and the max q_target value is -2:
-            q_target =
-            [[-1, 2, 3],
-             [4, 5, -2]]
-
-            So the (q_target - q_eval) becomes:
-            [[(-1)-(1), 0, 0],
-             [0, 0, (-2)-(6)]]
-
-            We then backpropagate this error w.r.t the corresponding action to network,
-            leave other action as error=0 cause we didn't choose it.
-            """
-        else:
-            s_=[next_state]
-            s=[state]
-            batch_index = 0
-            eval_act_index = action
-        ## start training
-        q_next, q_eval = self.sess.run(
-            [self.q_next, self.q_eval],
-            feed_dict={
+                s_=[next_state]
+                s=[state]
+                batch_index = 0
+                eval_act_index = action
+            ## start training
+            q_next, q_eval = self.sess.run(
+                [self.q_next, self.q_eval],
+                feed_dict={
                     self.keep_prob:kp,
-                self.s_: s_,  # fixed params
-                self.s: s,  # newest params
-            })
-        # change q_target w.r.t q_eval's action
-        q_target = q_eval.copy()
-        q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
-        # train eval network
-        _, self.cost = self.sess.run([self._train_op, self.loss],
-                                     feed_dict={self.s: s,
+                    self.s_: s_,  # fixed params
+                    self.s: s,  # newest params
+                })
+            # change q_target w.r.t q_eval's action
+            q_target = q_eval.copy()
+            q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
+            # train eval network
+            _, self.cost = self.sess.run([self._train_op, self.loss],
+                                         feed_dict={self.s: s,
                                                     self.keep_prob:kp,
-                                                self.q_target: q_target})
-        self.cost_his.append(self.cost)
+                                                    self.q_target: q_target})
+            self.cost_his.append(self.cost)
 
         # increasing epsilon
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max

@@ -28,8 +28,8 @@ def boltzmann(qtable,temp):
     else:
         probs=[p/sum(probs) for p in probs] # normalize
     try:
-    assert(sum(probs)==1)
-    return probs
+        assert(sum(probs)==1)
+        return probs
     except:
         s=sum(probs)
         # print("Probs "+str(probs)+" don't sum to one but to "+str(s))
@@ -44,9 +44,9 @@ def pairwise(iterable):
     if len(iterable)==1:
         return [[iterable[0],iterable[0]]]
     else:
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return list(zip(a, b))
+        a, b = itertools.tee(iterable)
+        next(b, None)
+        return list(zip(a, b))
 
 def gini(array):
     """Calculate the Gini coefficient of a numpy array.
@@ -312,7 +312,7 @@ def plot_hmap(heatmap,title,filename,plot_dir,xlab="compr2",xlab2="",ylab="compr
     ax.set_ylabel(ylab,fontsize=font_size)
     ax.set_xlabel(xlab,fontsize=font_size)
     if inverty:
-    plt.gca().invert_yaxis()
+        plt.gca().invert_yaxis()
     if not ticks==None:
         if len(ticks)==2:
             xticks=ticks[0]
@@ -411,6 +411,6 @@ def plot_qtable_heat(qtab,filename,xcol,ycol,valcol):
         bins=np.append(np.arange(hist.index.min(),hist.index.max(),(hist.index.max()-hist.index.min())/nbins),[hist.index.max()])
         binlabs=[np.around(np.mean([l,h]),decimals=2) for l,h in pairwise(bins)]
         if len(bins)>1:
-        hist=hist.groupby(pd.cut(hist.index,bins,include_lowest=True)).mean() # bin the index
+            hist=hist.groupby(pd.cut(hist.index,bins,include_lowest=True)).mean() # bin the index
         plot_hmap(hist,"Freq of Qvals, value: "+str(v)+" cost: "+str(c),filename+"_v"+str(v)+"_c"+str(c)+".pdf","./",xlab="Rep",ylab="Qvalue",ticks=[hist.columns,np.array(range(len(bins)))-0.5],ticklabs=[hist.columns,bins],inverty=False)
 

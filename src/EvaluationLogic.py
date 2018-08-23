@@ -25,12 +25,12 @@ class BaseEvaluationLogic():
         return [{"timestep": decisions[0]["timestep"],
                  "gini":gini(values),
                  "gini_cost":gini(costs),
-                "cost":cost(costs),
+                 "cost":cost(costs),
                  "cost_pop":cost(cost_pop),
                  "privacy":sum(privs),
                  "social_welfare":social_welfare(cost_pop,rews),
-                "efficiency":efficiency(threshold,np.nansum(values)),
-                "success":success(threshold,np.nansum(values)),
+                 "efficiency":efficiency(threshold,np.nansum(values)),
+                 "success":success(threshold,np.nansum(values)),
                  "tot_contrib":tc,
                  "num_contrib":tot_contributions([int(c) for c in contributions])}]
 ## TODO gini for number of contributions
