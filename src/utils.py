@@ -34,7 +34,7 @@ def boltzmann(qtable,temp):
         s=sum(probs)
         # print("Probs "+str(probs)+" don't sum to one but to "+str(s))
         if s<1:
-            probs[np.argmin(probs)]+=1-s
+            probs[-1]+=1-s
         else:
             probs[np.argmax(probs)]-=s-1
         return probs

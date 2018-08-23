@@ -102,8 +102,11 @@ class MeasurementGenNREL(BaseMeasurementGen):
         super().__init__()
         self.n1=int(kwargs["n1"])
         self.n2=int(kwargs["n2"])
-        self.thresh=int(kwargs["thresh"]*kwargs["N"])
         filename="../datasets/nrel_atlanta_rc/arc_sorted_by_person/final_data_n"+str(self.n2)+".csv.bz2"
+        self.n=int(kwargs["N"])
+        self.t=int(kwargs["T"])
+        # self.thresh=int(kwargs["thresh"]*self.n*self.n2/2.0)
+        self.thresh=int(kwargs["thresh"]*self.n)
         ## collect the data
         self.data=pd.read_csv(filename)
         self.data=self.data.groupby("ids").apply(lambda x: pd.DataFrame(data={
@@ -113,7 +116,6 @@ class MeasurementGenNREL(BaseMeasurementGen):
             # "cost_int":[np.array(pd.DataFrame(x)["cost_int"])],
             "l":pd.DataFrame(x).shape[0]}))
         ## reshape the data
-        self.n=int(kwargs["N"])
         if self.data.shape[0]<self.n:
             print("warning not enough data for "+str(self.n)+" agents, setting it to "+str(self.data.shape[0]))
             self.n=self.data.shape[0]
@@ -129,7 +131,6 @@ class MeasurementGenNREL(BaseMeasurementGen):
         lens=[(i,v[1]["l"]) for i,v in enumerate(self.data.iterrows())]
         np.random.shuffle(lens)
         data_lists=partition_list(lens,self.n)
-        self.t=int(kwargs["T"])
         if self.t is None:
             self.t=min([sum([v for k,v in j]) for j in data_lists]) # the shortest lenght of all data streams
             print("simulation length: "+str(self.t)+" for "+str(self.n)+" agents")
@@ -163,10 +164,10 @@ class MeasurementGenNREL(BaseMeasurementGen):
                 # vals_int=[next(i) for i in self.values_int]
                 # costs_int=[next(i) for i in self.costs_int]
                 # thresh=max(1,int(sum(vals)*np.random.uniform(0,1)))
-                assert(self.thresh<=sum(vals))
+                # assert(self.thresh<=sum(vals))
                 if self.thresh>sum(vals):
                     print("Warning, threshold is too high, setting it to "+str(sum(vals)))
-                    thresh=sum(vals)
+                    thresh=np.floor(sum(vals))
                 else:
                     thresh=self.thresh
                 ret=[{"value":v,"cost":c,"timestep":timestep,"agentID":i,"threshold":thresh} for i,(v,c) in enumerate(zip(vals,costs))]

@@ -153,35 +153,33 @@ def save_stats(datadir,test,conf,res_decs,time_min=3000):
         del stats_gini_contribs
     #stats_gini_contribs=pd.read_csv(os.path.join(datadir,str(test),"stats_gini_contribs.csv.gz"))
 
-def run_experiment_par(test,conf,datadir):
-    print("starting "+str(test))
-    if not os.path.exists(os.path.join(datadir,test)):
-        os.makedirs(os.path.join(datadir,test))
-    # empty dir
-    for files in os.listdir(os.path.join(datadir,test)):
-        f=os.path.join(datadir,str(test),files)
-        if os.path.isfile(f):
-            os.unlink(f)
-    part_fun=functools.partial(body,conf=conf,test=test,datadir=datadir,alpha=conf["A"],gamma=conf["G"])
-    if __name__ == '__main__':
-        print("starting processes")
-        pool=Pool()
-        ans=pool.map(part_fun,range(conf["reps"]))
-    else:
-        ans=map(part_fun,range(conf["reps"]))
-    # save_stats(datadir,test,conf,pd.concat(ans))
+# def run_experiment_par(test,conf,datadir):
+#     print("starting "+str(test))
+#     if not os.path.exists(os.path.join(datadir,test)):
+#         os.makedirs(os.path.join(datadir,test))
+#     # empty dir
+#     # for files in os.listdir(os.path.join(datadir,test)):
+#     #     f=os.path.join(datadir,str(test),files)
+#     #     if os.path.isfile(f):
+#     #         os.unlink(f)
+#     part_fun=functools.partial(body,conf=conf,test=test,datadir=datadir,alpha=conf["A"],gamma=conf["G"])
+#     if __name__ == '__main__':
+#         print("starting processes")
+#         pool=Pool()
+#         ans=pool.map(part_fun,range(conf["reps"]))
+#     else:
+#         ans=map(part_fun,range(conf["reps"]))
+#     # save_stats(datadir,test,conf,pd.concat(ans))
 
 def run_experiment(test,conf,datadir):
     print("starting "+str(test))
     if not os.path.exists(os.path.join(datadir,test)):
         os.makedirs(os.path.join(datadir,test))
     # empty dir
-    for files in os.listdir(os.path.join(datadir,test)):
-        f=os.path.join(datadir,str(test),files)
-        if os.path.isfile(f):
-            os.unlink(f)
-    # log_tot=[]
-    # qtab_list=[]
+    # for files in os.listdir(os.path.join(datadir,test)):
+    #     f=os.path.join(datadir,str(test),files)
+    #     if os.path.isfile(f):
+    #         os.unlink(f)
     res_decs=pd.DataFrame()
     for r in range(conf["reps"]):
         print("repetition: "+str(r))

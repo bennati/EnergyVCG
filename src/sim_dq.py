@@ -82,7 +82,7 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
 
 # Deep Q Network off-policy
 class DecisionLogicDQ(BaseDecisionLogic):
-    def __init__(self,model,alpha=0.001,gamma=0.0,training=True):
+    def __init__(self,model,alpha=0.007,gamma=0.0,training=True):
         super().__init__(model)
         print("Initializing with alpha "+str(alpha)+" and gamma "+str(gamma))
         self.states=list(itertools.product(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
@@ -123,7 +123,7 @@ class DecisionLogicDQ(BaseDecisionLogic):
     #     return (self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])
 
 class DecisionLogicDQHist(BaseDecisionLogic):
-    def __init__(self,model,gamma = 0.0,alpha = 0.001,tmax=5,training=True):
+    def __init__(self,model,gamma = 0.2,alpha = 0.001,tmax=5,training=True):
         super().__init__(model)
         self.bins=[np.arange(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
                    np.arange(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),

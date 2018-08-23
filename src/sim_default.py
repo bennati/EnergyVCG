@@ -47,6 +47,15 @@ class DecisionLogicSupervisorMandatory(BaseDecisionLogic):
         self.act=[{"contribution":a["value"],"cost":a["cost"],"privacy":1,"agentID":a["agentID"],"contributed":True,"timestep":a["timestep"],"threshold":a["threshold"]} for a in perceptions]
         return self.act
 
+class DecisionLogicSupervisorRandom(BaseDecisionLogic):
+    """
+    Returns a constant decision
+    """
+    def get_decision(self,perceptions):
+        decs=[np.random.randint(2) for _ in range(len(perceptions))]
+        self.act=[{"contribution":(a["value"] if d else 0),"cost":(a["cost"] if d else 0),"privacy":(1 if d else 0),"agentID":a["agentID"],"contributed":(d==1),"timestep":a["timestep"],"threshold":a["threshold"]} for d,a in zip(decs,perceptions)]
+        return self.act
+
 class DecisionLogicSupervisorDefect(BaseDecisionLogic):
     """
     Returns a constant decision
