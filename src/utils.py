@@ -141,6 +141,18 @@ def social_welfare(costs,rewards):
     assert(len(costs)==len(rewards))
     return np.mean(np.array(rewards)-np.array(costs))
 
+def social_welfare_inequality_aversion(costs,rewards,e=0.1):
+    """
+    Computes the social welfare for the current round
+    Args:
+    costs: a list of costs, one for each agent
+    rewards: a list of rewards, one for each agent
+    Returns: the social welfare
+    """
+    assert(len(costs)==len(rewards))
+    rewards=(np.array(rewards)-np.array(costs))**(1-e)
+    return np.sum(rewards)/(len(costs)*(1-e))
+
 def contributions(decisions):
     """
     Computes the ratio of volunteering and free riding

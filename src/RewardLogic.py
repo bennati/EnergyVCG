@@ -41,3 +41,28 @@ class RewardLogicUniform(BaseRewardLogic):
         ret=[{"agentID": d["agentID"],"reward":r,"gini":self.last_gini} for r,d in zip(ret,decisions)]
         return ret
 
+class RewardLogicInequalityAversion(BaseRewardLogic):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.benefit=10
+        self.damage=-10
+
+    def get_rewards(self,decisions,e=0.1):
+        """
+        The threshold is randomly generated around the average contribution
+        """
+        thresh=max([p["threshold"] for p in decisions])
+        contribs=np.sum([d["contribution"] for d in decisions if d["contributed"]])
+        # if thresh<=contribs:
+        #     print("success "+str(thresh)+" "+str(contribs))
+        # else:
+        #     print("insuccess "+str(thresh)+" "+str(contribs))
+        outcome=success(thresh,contribs)
+        costs=np.array([(d["cost"] if d["contributed"] else 0) for d in decisions])**(1-e)
+        if outcome==1:
+            ret=-costs+self.benefit
+        else:
+            # print("unsuccessful")
+            ret=-costs+self.damage
+        ret=[{"agentID": d["agentID"],"reward":r} for r,d in zip(ret,decisions)]
+        return ret
