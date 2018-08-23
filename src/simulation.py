@@ -9,6 +9,7 @@ from RewardLogic import *
 from MeasurementGen import *
 from sim_default import *
 from sim_nrel_data import *
+from sim_ev_data import *
 from sim_qlearn import *
 from sim_wlearn import *
 from sim_dq import *
