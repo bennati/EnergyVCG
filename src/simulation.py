@@ -11,6 +11,7 @@ from sim_default import *
 from sim_nrel_data import *
 from sim_qlearn import *
 from sim_wlearn import *
+from sim_dq import *
 from sim_aspiration import *
 from sim_knapsack import *
 from utils import *

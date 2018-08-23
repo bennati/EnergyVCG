@@ -22,14 +22,25 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
     """
     def __init__(self,model,alpha=0.001,gamma=0.0,training=True):
         super().__init__(model)
-        self.states=list(itertools.product(*[range(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2),
-                                             range(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2)]*self.model.N))
+        print("Initializing with alpha "+str(alpha)+" and gamma "+str(gamma))
+        # self.states=list(itertools.product(*[range(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2),
+        #                                      range(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2)]*self.model.N))
+        self.states=[tuple([0]*(2*self.model.N))]
         self.actions=list(itertools.product([False,True],repeat=self.model.N))
         self.dqlearner=DQlearner(self.states,range(len(self.actions)),gamma=gamma,alpha=alpha,n_features=2*self.model.N,learn_step=50,batch_size=50)
         self.act=self.actions[0]
-        # if training:
-        #     self.dqlearner.train(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)
         self.dropout_prob=0.8
+        if training:
+            self.train()
+
+    def train(self):
+        states=[np.random.uniform(max(1,self.model.measurement_fct.n1),self.model.measurement_fct.n2,size=2*self.model.N) for _ in range(100)]
+        action=self.actions.index(tuple([True]*self.model.N))
+        for s in states:
+            for _ in range(100):
+                self.dqlearner.learn(s,[0]*len(s),action,1,kp=self.dropout_prob) # contributing is better
+        self.dqlearner.cost_his = []
+
 
     def get_decision(self, perceptions):
         self.dropout_prob=( 0.8 if self.model.schedule.steps>np.ceil(self.model.measurement_fct.t/2.0)-1 else 1.0 )
@@ -37,7 +48,7 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
         qvals=self.dqlearner.sess.run(self.dqlearner.q_eval, feed_dict={self.dqlearner.keep_prob:self.dropout_prob,self.dqlearner.s: [current]})[0]
         probs=boltzmann(qvals,0.1)
         try:
-        self.act=np.random.choice(range(len(self.actions)),p=probs)
+            self.act=np.random.choice(range(len(self.actions)),p=probs)
         except Exception as e:
             print(str(e)+": "+str(sum(probs)))
         act=self.actions[self.act]
@@ -73,6 +84,7 @@ class DecisionLogicSupervisorDQ(BaseDecisionLogic):
 class DecisionLogicDQ(BaseDecisionLogic):
     def __init__(self,model,alpha=0.001,gamma=0.0,training=True):
         super().__init__(model)
+        print("Initializing with alpha "+str(alpha)+" and gamma "+str(gamma))
         self.states=list(itertools.product(range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
                                            range(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2)))
         self.actions=[0,1]
@@ -109,3 +121,59 @@ class DecisionLogicDQ(BaseDecisionLogic):
 
     # def get_current_state_int(self):
     #     return (self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])
+
+class DecisionLogicDQHist(BaseDecisionLogic):
+    def __init__(self,model,gamma = 0.0,alpha = 0.001,tmax=5,training=True):
+        super().__init__(model)
+        self.bins=[np.arange(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
+                   np.arange(max(1,self.model.model.measurement_fct.n1),self.model.model.measurement_fct.n2),
+                   np.arange(0,1,0.3),
+                   np.arange(0,1,0.3)]
+        self.states=list(itertools.product(*self.bins)) # all possible states
+        self.actions=[0,1]
+        self.qlearner=DQlearner(self.states,self.actions,gamma=gamma, alpha=0.001,n_features=4,learn_step=10,batch_size=10)
+        self.act=1
+        self.dropout_prob=0.8
+        if training:
+            self.train()   # pretraining
+        self.last_info=self.model.model.decision_fct.get_public_info()[self.model.unique_id]
+
+    def train(self):
+        """
+        Pretrain the network to contribute
+        """
+        for s in self.states:
+            for _ in range(100):
+                self.qlearner.learn(s,[0]*len(s),0,0,kp=self.dropout_prob)
+                self.qlearner.learn(s,[0]*len(s),1,1,kp=self.dropout_prob) # contributing is better
+        self.qlearner.cost_his = []
+
+    def get_current_state(self):
+        return (self.model.current_state["perception"]["value"],self.model.current_state["perception"]["cost"])
+
+    def get_qtable(self):
+        ret,l=self.qlearner.get_qtable()
+        ret["idx"]=self.model.unique_id
+        l={str(self.model.unique_id):l}
+        return ret,l
+
+    # def get_qcount(self):
+    #     return self.qlearner.get_qcount()
+
+    def get_decision(self,perceptions):
+        self.dropout_prob=( 0.8 if self.model.model.schedule.steps>np.ceil(self.model.model.measurement_fct.t/2.0)-1 else 1.0 )
+        self.last_info=self.model.model.decision_fct.get_public_info()[self.model.unique_id]
+        current=self.get_current_state()+tuple([self.last_info["hist_contributed"],self.last_info["avg_hist_contributed"]])
+        self.act=self.qlearner.get_decision(current,kp=self.dropout_prob)
+        assert(self.act in self.actions)
+        return self.act
+
+    def feedback(self,perceptions,reward,rew_type="reward"):
+        assert(reward["agentID"]==self.model.unique_id)
+        s=self.get_current_state()
+        self.reward=reward[rew_type]
+        info=self.model.model.decision_fct.get_public_info()[self.model.unique_id]
+        current=s+tuple([self.last_info["hist_contributed"],self.last_info["avg_hist_contributed"]])
+        # nxt=s+tuple([info["hist_contributed"],info["avg_hist_contributed"]])
+        nxt=tuple([0,0,info["hist_contributed"],info["avg_hist_contributed"]])
+        self.qlearner.learn(current,nxt,self.act,self.reward,kp=self.dropout_prob)
