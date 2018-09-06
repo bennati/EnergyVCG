@@ -1,24 +1,32 @@
 import pandas as pd
 import itertools
 import matplotlib
-import os
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-rcParams.update({'figure.autolayout': True})
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
+#rcParams.update({'figure.autolayout': True})
 import numpy as np
 import math
+
+def positive_sampling(mu,std):
+    'returns a positive value while keeping constant the sampling probability of all positive values'
+    ret=-1
+    while ret<=0:
+        ret=np.random.normal(loc=mu,scale=std)
+    return ret
 
 def renormalize(n, range1, range2):
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]
     ret=(delta2 * (n - range1[0]) / delta1) + range2[0]
-    if np.isnan(ret):
-        ret=range2[0]
-    if np.isinf(ret):
-        ret=range2[1]
-    assert(ret>=range2[0] and ret <=range2[1])
+    if not hasattr(ret,"__len__"):
+        ret=[ret]
+    for i,r in enumerate(ret):
+        if np.isnan(r):
+            ret[i]=range2[0]
+        if np.isinf(r):
+            ret[i]=range2[1]
+        assert(ret[i]>=range2[0] and ret[i] <=range2[1])
     return ret
 
 def boltzmann(qtable,temp):
@@ -109,17 +117,17 @@ def efficiency(thresh,tot_contrib):
     """
     return (np.nan if tot_contrib==0 else ((thresh/tot_contrib) if tot_contrib>=thresh else 0))
 
-# def efficiency_mean(efficiencies):
-#     """
-#     Returns the mean efficiency over time
-#     Args:
-#     efficiencies: a list of efficiency values
-#     Returns:
-#     A float representing the mean efficiency (among all successful rounds) or 0 if there were no successful rounds
-#     """
-#     assert(all(np.array(efficiencies)<=1))
-#     vals=[i for i in efficiencies if i>0]
-#     return 0 if len(vals)==0 else np.mean(vals)
+def efficiency_mean(efficiencies):
+    """
+    Returns the mean efficiency over time
+    Args:
+    efficiencies: a list of efficiency values
+    Returns:
+    A float representing the mean efficiency (among all successful rounds) or 0 if there were no successful rounds
+    """
+    assert(all(np.array(efficiencies)<=1))
+    vals=[i for i in efficiencies if i>0]
+    return 0 if len(vals)==0 else np.mean(vals)
 
 def cost(costs):
     """
@@ -195,53 +203,34 @@ A data frame with columns 'X_mean', 'X_std' and 'X_ci' containing the statistics
         data_.drop("count_sum",1,inplace=True)
     return data_
 
-def plot_trend(df,xname,filename,trends=None,yname=None,lstyles=['-','--',':','-.'],colors=None,font_size=12,ylab=None,xlab=None):
+def get_stats(log,varname,idx=["timestep"],cols=None):
+    """
+    Log: a list of dictionaries or data frames
+    """
+    df=[pd.DataFrame(i[varname]) for i in log]
+    return compute_stats(df,idx=idx,columns=cols)
+
+def plot_trend(df,xname,filename,trends=None):
     if trends is None:
         trends=[d[:-5] for d in df.columns if ("_mean" in d)]
     fig,ax=plt.subplots()
-    if len(trends)>len(lstyles):
-        lstyles=['-']*len(trends)
-    else:
-        lstyles=lstyles[:len(trends)]
-    lineArtists=[plt.Line2D((0,1),(0,0), color='k', marker='', linestyle=sty) for sty in lstyles]
-    ax.set_xlabel(xlab or xname,fontsize=font_size)
-    ax.set_ylabel(ylab or yname,fontsize=font_size)
-    if yname is None:
-        data=[(df,None)]
-    else:
-        data=[(df[df[yname]==i],i) for i in df[yname].unique()]
-    if colors is None:
-        cmap = plt.get_cmap('cubehelix_r')
-        colors=[cmap(float(i+1)/(len(data)+1)) for i in range(len(data))]
-    colorArtists = [plt.Line2D((0,1),(0,0), color=c) for c in colors]
+    x=df[xname]
+    ax.set_xlabel(xname)
     #fig.suptitle(title)
+    #ax.set_ylabel(ylab or str(y))
     # if ylim:
     #     ax.set_ylim(ylim)
-    box = ax.get_position()
-    # if yname and len(yname)>1 and len(trends)>1:
-    #     # Shrink current axis's height by 10% on the bottom
-    ax.set_position([box.x0, box.y0,
-                     box.width, box.height * 1.1])
-    if yname and len(df[yname].unique())>1:
-        ax.add_artist(plt.legend(colorArtists,[l for d,l in data],loc='upper center', bbox_to_anchor=(0.5, 1.18),fancybox=True, shadow=True, ncol=len(data),fontsize=font_size))
-    if len(trends)>1:
-        ax.add_artist(plt.legend(lineArtists,trends,loc='upper center', bbox_to_anchor=(0.5, 1),fancybox=True, shadow=True, ncol=len(trends),fontsize=font_size))
-    for (d,l),c in zip(data,colors):
-        x=d[xname]
-        for y,sty in zip(trends,lstyles):
-            lab=(y if l is None else y+"; "+yname+"="+str(l))
-            ax.plot(x,d[y+"_mean"],label=lab,linestyle=("--" if l=="Baseline" else "-"),color=c,linewidth=3)
-            ax.fill_between(x,np.asarray(d[y+"_mean"])-np.asarray(d[y+"_ci"]),np.asarray(d[y+"_mean"])+np.asarray(d[y+"_ci"]),alpha=0.2,linestyle=sty,facecolor=c,linewidth=3)
-    # plt.legend()
-    plt.setp(ax.xaxis.get_majorticklabels(),fontsize=font_size)
-    plt.setp(ax.yaxis.get_majorticklabels(),fontsize=font_size)
+    for y in trends:
+        ax.plot(x,df[y+"_mean"],label=y)
+        ax.fill_between(x,np.asarray(df[y+"_mean"])-np.asarray(df[y+"_ci"]),np.asarray(df[y+"_mean"])+np.asarray(df[y+"_ci"]),alpha=0.2)
+    fig.legend()
     fig.savefig(filename,format='pdf')
     plt.close(fig)
 
 def plot_measures(df,xname,filename,trends=None):
     fig=plt.figure()
-    for measures,ylim,i in [[["efficiency","success","gini","gini_cost"],[0,1],0]
-                            ,[["cost_pop","social_welfare","num_contrib"],None,1]]:
+    for measures,ylim,i in [[["efficiency","success","gini"],[0,1],0]
+                            ,[["cost","social_welfare","tot_contrib"],None,1]]:
         ax = fig.add_subplot(121+i)
         x=df[xname]
         ax.set_xlabel(xname)
