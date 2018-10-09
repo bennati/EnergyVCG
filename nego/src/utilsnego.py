@@ -221,3 +221,16 @@ def expandgrid(dct):
     Returns: A dataframe where the columns are the variables and the rows contain combinations of values
     """
     return pd.DataFrame(list(itertools.product(*dct.values())),columns=list(dct.keys()))
+
+def is_mediator_biased(bias_mediator):
+    '''
+    Returns None if the mediator is not biased, or True with a probability equal to the parameter 'bias_mediator'
+    '''
+    return (np.random.uniform()<bias_mediator if bias_mediator!=0 else None) # the mediator is not biased if the bias is 0
+
+def lo_hi(caste,lo,hi):
+    return np.random.uniform()<(lo if caste else hi)
+def is_productive(x,produce_low,produce_high):
+    return lo_hi(x,produce_low,produce_high)
+def is_biased(x,biased_low,biased_high):
+    return lo_hi(x,biased_low,biased_high)

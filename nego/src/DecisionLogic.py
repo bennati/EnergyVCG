@@ -19,16 +19,16 @@ class NegoDecisionLogic(BaseDecisionLogic):
                    "contribution":0,"contributed":False,"cost":a.current_state["cost"], # TODO why is contribution always 0?
                    "reward":a.current_state["reward"],"action":a.current_state["action"],
                    "partner":a.current_state["partner"],"social_type":p["social_type"],
-                   "biased":p["biased"],"bias_degree":p["bias_degree"]}
+                   "biased":p["biased"],"bias_mediator":p["bias_mediator"]}
                   for a,p in zip(self.model.schedule.agents,perceptions)]
         return self.act
 
     def biased_trade(self,seller, buyer):
         s=seller["agent"].current_state["perception"]
         b=buyer["agent"].current_state["perception"]
-        assert(s["bias_degree"]==b["bias_degree"]) # there is only one mediator
+        assert(s["bias_mediator"]==b["bias_mediator"]) # there is only one mediator
         # TODO should the mediator bias influence also the partner selection?
-        mediator_biased=s["bias_degree"]
+        mediator_biased=s["bias_mediator"] # boolean or None if the mediator is not biased
         if mediator_biased is None: # the mediator is not biased, the agents determine the outcome of the transaction
             bias=b["biased"] and b["social_type"]==2 and s["social_type"]==1       # buyers don't want to trade, sellers can trade with anyone
         else:               # the mediator is biased, it determines the outcome of the transaction

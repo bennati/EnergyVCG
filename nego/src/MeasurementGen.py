@@ -2,21 +2,22 @@ import numpy as np
 from src.MeasurementGen import BaseMeasurementGen
 from src.utils import renormalize
 from src.utils import positive_sampling
+from nego.src.negoutils import *
 import csv
 from numpy.random import choice
 import pandas as pd
 import os
 
-class NegoMeasurementGen():
-    def __init__(self):
-        np.random.seed()
-        pass
+# class NegoMeasurementGen():
+#     def __init__(self):
+#         np.random.seed()
+#         pass
 
-    def get_measurements(self,population,timestep):
-        """
-        Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
-        """
-        return [{"value":0,"timestep":timestep}]
+#     def get_measurements(self,population,timestep):
+#         """
+#         Returns a list of dictionaries containing the measurements: the state of each agent at the current timestep
+#         """
+#         return [{"value":0,"timestep":timestep}]
 
 # class MeasurementGenUniform(BaseMeasurementGen):
 #     def __init__(self, *args, **kwargs):
@@ -100,8 +101,8 @@ class MeasurementGenReal(BaseMeasurementGen):
         self.produce_high = kwargs["buy_high"] # proportion of agents who can produce in higher caste
         self.caste=kwargs["low_caste"] # proportion of agents in low caste
         self.biased_low=kwargs["bias_low"]  # proportion of biased agents among low caste
-        self.biased_high = kwargs["bias_high"] # proportion of biased agents among low caste
-        self.bias_mediator = kwargs["bias_degree"] # proportion of agents being biased by the mediator
+        self.biased_high = kwargs["bias_high"] # proportion of biased agents among high caste
+        self.bias_mediator = kwargs["bias_degree"] # probability of mediator being biased
         self.tariff_avg = kwargs["tariff_avg"]
         self.produce_avg = kwargs["produce_avg"]
         self.min_income=kwargs["min_income"]
@@ -127,47 +128,21 @@ class MeasurementGenReal(BaseMeasurementGen):
             income_array = np.arange(0,1,1/len(population)) # TODO uniformly spaced vector from 0 to 1? is it not supposed to be a uniform distribution?
             income = [np.random.uniform(mi,ma) for i in range(len(population))] # a uniformly distributed income for each agent
             production = [self.produce_avg*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
-            # with open('data/tariff.csv') as csvfile:
-            #     has_header = csv.Sniffer().sniff(csvfile.readline())
-            #     csvfile.seek(0)
-            #     readCSV = csv.DictReader(csvfile,fieldnames=["timestamp","tariff_rate","inrpriceperkwh"+str(int(self.tariff_avg))])
-            #     if has_header:
-            #         next(readCSV)
-            #     data = [row for row in readCSV]
-            #     tariff = data[timestep]["inrpriceperkwh"+str(int(self.tariff_avg))]
             ## TODO, why is the tariff generated from the third column while the documentation talks about the second column?
             tariff=self.tariff_data.ix[timestep,"inrpriceperkwh"+str(int(self.tariff_avg))]
-            is_low_caste= lambda i: i<len(population)*self.caste
-            is_high_caste= lambda i: i>len(population)*self.caste
-            is_productive = lambda i: (i<len(population)*self.caste*self.produce_low # proportion of productive low-caste individuals
-                                  if is_low_caste(i) else
-                                  i<len(population)*(self.caste)+ # i is the index in the population, so we must start after all low-caste individuals
-                                  len(population)*(1-self.caste)*self.produce_high) # proportion of productive high-caste individuals
-            # TODO should the bias be assigned probabilistically?
-            is_biased = lambda i: (i<len(population)*self.caste*self.biased_low # proportion of biased low-caste individuals
-                              if is_low_caste(i) else
-                              i<len(population)*(self.caste)+ # i is the index in the population, so we must start after all low-caste individuals
-                              len(population)*(1-self.caste)*self.biased_high) # proportion of biased high-caste individuals
-            ## debug
-            # v=np.random.uniform(len(population),size=1000)
-            # p=np.array(list(map(is_productive,v)))
-            # l=np.array(list(map(is_low_caste,v)))
-            # h=np.array(list(map(is_high_caste,v)))
-            # pl=sum(p & l)/1000 # equals to self.caste*produce_low
-            # ph=sum(p & h)/1000 # equals to (1-self.caste)*self.produce_high
-            bias_mediator=(np.random.uniform()<self.bias_mediator if self.bias_mediator!=0 else None) # the mediator is not biased if the bias is 0
+            castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste
             ret=[{"consumption":positive_sampling(
-                (self.mu2 if is_high_caste(i) else self.mu1)
+                (self.mu1 if caste else self.mu2)
                 ,self.s1),
                   "tariff":positive_sampling(float(tariff),self.s2), # a value normally distributed around the value in the data
-                  "social_type":(2 if is_high_caste(i) else 1),
-                  "production":production[i] if is_productive(i) else 0,
-                  "biased":1 if is_biased(i) else 0,
-                  "bias_degree":bias_mediator,
+                  "social_type":(1 if caste else 2),
+                  "production":production[i] if is_productive(caste,self.produce_low,self.produce_high) else 0,
+                  "biased":1 if is_biased(caste,self.biased_low,self.biased_high) else 0,
+                  "bias_mediator":is_mediator_biased(self.bias_mediator),
                   # "chance_rich":np.random.uniform()<self.chancer, # TODO should being rich depend on the income?
                   # "chance_average":np.random.uniform()<self.chancerp,
                   "agentID":0, "income":renormalize(income[i],[mi,ma],[0,1])[0],
                   "income_excess":(renormalize(income[i],[mi,ma],[0,1])[0]-income_array[i]),
                   "main_cost":0.1,"cost":0,"timestep":timestep,"type":None}
-                 for i in range(len(population))]  # high class is 2, low class is 1, main_cost is maintenance cost
+                 for i,caste in enumerate(castes)]  # high class is 2, low class is 1, main_cost is maintenance cost
             return ret
