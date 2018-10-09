@@ -2,7 +2,7 @@ import numpy as np
 from src.MeasurementGen import BaseMeasurementGen
 from src.utils import renormalize
 from src.utils import positive_sampling
-from nego.src.negoutils import *
+from nego.src.utilsnego import *
 import csv
 from numpy.random import choice
 import pandas as pd
@@ -109,9 +109,8 @@ class MeasurementGenReal(BaseMeasurementGen):
         self.max_income=kwargs["max_income"]
         # self.chancer=kwargs["chance_rich"]
         # self.chancerp=kwargs["chance_poor"]
-        datadir='data'
-        self.tariff_data=pd.read_csv(os.path.join(datadir,"tariff.csv"),names=["timestamp","tariff_rate","inrpriceperkwh"+str(int(self.tariff_avg))]).reset_index(drop=True)
-
+        datadir='datasets'
+        self.tariff_data=pd.read_csv(os.path.join(datadir,"tariff.csv"))
 
     def get_measurements(self,population,timestep):
         """
