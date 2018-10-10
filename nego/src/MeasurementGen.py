@@ -97,8 +97,8 @@ class MeasurementGenReal(BaseMeasurementGen):
         if self.t is None:
             print("setting t to default")
             self.t=1000
-        self.produce_low = kwargs["buy_low"] # proportion of agents who can produce in lower caste
-        self.produce_high = kwargs["buy_high"] # proportion of agents who can produce in higher caste
+        self.produce_low = kwargs["sellers_low"] # proportion of agents who can produce in lower caste
+        self.produce_high = kwargs["sellers_high"] # proportion of agents who can produce in higher caste
         self.caste=kwargs["low_caste"] # proportion of agents in low caste
         self.biased_low=kwargs["bias_low"]  # proportion of biased agents among low caste
         self.biased_high = kwargs["bias_high"] # proportion of biased agents among high caste
@@ -127,7 +127,7 @@ class MeasurementGenReal(BaseMeasurementGen):
             # production = [self.produce_avg*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
             ## TODO, why is the tariff generated from the third column while the documentation talks about the second column?
             tariff=self.tariff_data.ix[timestep,"inrpriceperkwh"+str(int(self.tariff_avg))]
-            castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste
+            castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste, true means low caste
             ret=[{"consumption":positive_sampling(
                 (self.mu1 if caste else self.mu2)
                 ,self.s1),
