@@ -1,5 +1,5 @@
 import unittest
-from nego.src.utilsnego import is_mediator_biased,lo_hi
+from nego.src.utilsnego import is_mediator_biased,lo_hi,split_bids
 import functools
 import numpy as np
 
@@ -27,3 +27,9 @@ class TestNegoUtils(unittest.TestCase):
         assert(abs(s-lo)<tol)
         s=sum([lo_hi(False,lo,hi) for _ in range(r)])/r
         assert(abs(s-hi)<tol)
+
+    def test_split_bids(self):
+        bid={"asd":"asd","value":np.random.uniform(10)}
+        ans=split_bids([bid],splitsize=1.0)
+        assert(all([i["asd"]=="asd" for i in ans])) # is a duplicated
+        assert(len(ans)==np.floor(bid['value'])+1)  # split a correct number of times

@@ -94,7 +94,7 @@ class BaseSupervisor(Model):
         return decisions
 
     def partner_set(self):
-        return self.decision_fct.get_partner(bidsplit=self.bidsplit,multibid=self.multibid)
+        return self.decision_fct.get_partner(self.schedule.agents,bidsplit=self.bidsplit,multibid=self.multibid)
 
     def __learn(self,perceptions,reward):
         """

@@ -8,7 +8,6 @@ from nego.src.DecisionLogic import NegoDecisionLogic
 from nego.src.RewardLogic import NegoRewardLogic
 from nego.src.MeasurementGen import *
 from nego.src.Evaluation import  NegoEvaluationLogic
-from nego.src.utilsnego import *
 from src.utils import *
 from nego.src.Agent import *
 
@@ -58,7 +57,7 @@ def run_experiment(test,conf,datadir="./"):
         plotdir=os.path.join(datadir,test,"plots")
         if not os.path.exists(plotdir):
             os.makedirs(plotdir)
-        plot_trend(stats_rew,varname,os.path.join(plotdir,"./rewards_"+str(test)+"_"+str(varname)+"_nego.pdf"),trends=["reward","produce_avg"])
+        plot_trend(stats_rew,varname,os.path.join(plotdir,"./rewards_"+str(test)+"_"+str(varname)+"_nego.pdf"),trends=[t for t in ["reward","produce_avg"] if t !=varname])
         plot_trend(stats_perc,varname,os.path.join(plotdir,"./perceptions_"+str(test)+"_"+str(varname)+"_nego.pdf"),trends=["production","consumption","tariff"])
         plot_trend(stats_decs,varname,os.path.join(plotdir,"./decisions_"+str(test)+"_"+str(varname)+"_nego.pdf"),trends=["action","cost"])
         plot_measures_nego(stats_eval,varname,os.path.join(plotdir,"./eval_"+str(test)+"_"+str(varname)+"_nego.pdf"))

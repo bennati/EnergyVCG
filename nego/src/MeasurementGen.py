@@ -123,10 +123,8 @@ class MeasurementGenReal(BaseMeasurementGen):
             ma=self.max_income
             assert(mi>=0)
             assert(ma>mi)
-            # income_array = renormalize(np.arange(mi,ma,(ma-mi)/len(population)),[mi,ma],[0,1])
-            income_array = np.arange(0,1,1/len(population)) # TODO uniformly spaced vector from 0 to 1? is it not supposed to be a uniform distribution?
             income = [np.random.uniform(mi,ma) for i in range(len(population))] # a uniformly distributed income for each agent
-            production = [self.produce_avg*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
+            # production = [self.produce_avg*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
             ## TODO, why is the tariff generated from the third column while the documentation talks about the second column?
             tariff=self.tariff_data.ix[timestep,"inrpriceperkwh"+str(int(self.tariff_avg))]
             castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste
@@ -135,13 +133,11 @@ class MeasurementGenReal(BaseMeasurementGen):
                 ,self.s1),
                   "tariff":positive_sampling(float(tariff),self.s2), # a value normally distributed around the value in the data
                   "social_type":(1 if caste else 2),
-                  "production":production[i] if is_productive(caste,self.produce_low,self.produce_high) else 0,
-                  "biased":1 if is_biased(caste,self.biased_low,self.biased_high) else 0,
+                  "production":individual_production(income[i],self.produce_avg,self.caste,self.produce_low,self.produce_high),
+                  "biased":is_biased(caste,self.biased_low,self.biased_high),
                   "bias_mediator":is_mediator_biased(self.bias_mediator),
                   # "chance_rich":np.random.uniform()<self.chancer, # TODO should being rich depend on the income?
-                  # "chance_average":np.random.uniform()<self.chancerp,
                   "agentID":0, "income":renormalize(income[i],[mi,ma],[0,1])[0],
-                  "income_excess":(renormalize(income[i],[mi,ma],[0,1])[0]-income_array[i]),
                   "main_cost":0.1,"cost":0,"timestep":timestep,"type":None}
                  for i,caste in enumerate(castes)]  # high class is 2, low class is 1, main_cost is maintenance cost
             return ret

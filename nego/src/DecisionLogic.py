@@ -1,4 +1,5 @@
 from src.DecisionLogic import BaseDecisionLogic
+from nego.src.utilsnego import split_bids
 import operator
 import math
 import numpy as np
@@ -43,23 +44,19 @@ class NegoDecisionLogic(BaseDecisionLogic):
                                                   else agent["partner"]+[partner["agent"]]])})
         return agent
 
-    def get_partner(self,bidsplit=False,multibid=False):
+    def get_partner(self,population,bidsplit=False,multibid=False):
         sellers = []
         buyers = []
         ## divide buyers and sellers
-        for a in self.model.schedule.agents:
+        for a in population:
             if a.current_state["type"] == "seller":
-                sellers.append({"agent":a,"action":np.nan,"partner":None,"value":a.current_state["perception"]["production"],"agent_bid":a.current_state["perception"]["tariff"]})
+                sellers.append({"agent":a,"action":None,"partner":None,"value":a.current_state["perception"]["production"],"agent_bid":a.current_state["perception"]["tariff"]})
             elif a.current_state["type"] == "buyer":
-                buyers.append({"agent":a,"action":np.nan,"partner":None,"value":a.current_state["perception"]["consumption"],"agent_bid":a.current_state["perception"]["tariff"]})
+                buyers.append({"agent":a,"action":None,"partner":None,"value":a.current_state["perception"]["consumption"],"agent_bid":a.current_state["perception"]["tariff"]})
             else:
                 print(a.current_state["type"])
-        if bidsplit:
-            ## split in smaller bids, duplicate dict entries with different bids
-            splitsize=1.0
-            split_entries=lambda l: [{**s,'value':i} for s in l # create a new entry with the same records as the old dict, but with an updated value
-                                for i in [1]*int(s['value']//splitsize)+[s['value']%splitsize]] # divide in bids of size splitsize
-            sellers=split_entries(sellers); buyers=split_entries(buyers)
+        if bidsplit: ## split in smaller bids, duplicate dict entries with different bids
+            sellers=split_bids(sellers); buyers=split_bids(buyers)
         sellers_sorted = sorted(sellers,key=operator.itemgetter('agent_bid')) # ascending
         buyers_sorted = sorted(buyers,key=operator.itemgetter('agent_bid'),reverse=True) # descending
         # print(str(len(sellers))+" sell and "+str(len(buyers))+" buy")
@@ -103,7 +100,7 @@ class NegoDecisionLogic(BaseDecisionLogic):
         # print("-------------------- LAST SELLERS "+str([p["value"] for p in sellers_sorted]))
         # print("-------------------- LAST BUYERS "+str([p["value"] for p in buyers_sorted]))
         ## update agents states
-        for a in self.model.schedule.agents:
+        for a in population:
             ## aggregate values belonging to the same user, used in case of bidsplit
             def update_agent_state(agent,dct,varname):
                 l=[x for x in dct if x['agent']==agent] # isolate the entries that correspond to the agent
@@ -118,8 +115,8 @@ class NegoDecisionLogic(BaseDecisionLogic):
                     agent.current_state['perception'].update({varname:sum([x['value'] for x in l])}) # sum all contributions in dict
             update_agent_state(a,sellers_sorted,'production')
             update_agent_state(a,buyers_sorted,'consumption')
-        # print("-------------------- PARTNERS "+str([a.current_state["partner"] for a in self.model.schedule.agents]))
-        return [({"agent":a,"partner":a.current_state["partner"]}) for a in self.model.schedule.agents]
+        # print("-------------------- PARTNERS "+str([a.current_state["partner"] for a in population]))
+        return [({"agent":a,"partner":a.current_state["partner"]}) for a in population]
 
 class NegoDecisionLogicAgent(BaseDecisionLogic):
     """
@@ -127,7 +124,6 @@ class NegoDecisionLogicAgent(BaseDecisionLogic):
     """
 
     def get_decision(self,perceptions):
-        print("aodhpoba;sjb;jb;absd;jd;vododododo")
         return self.model.current_state["action"]
 
     def feedback(self,perceptions,reward):
