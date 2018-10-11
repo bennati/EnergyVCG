@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 #rcParams.update({'figure.autolayout': True})
 
-def efficiency_nego(all_efficiencies,tot_satisfied_agents):
+def efficiency_nego(population):
     """
     calculates whether the demands are met exactly for the agents during transaction
     Args:
@@ -22,7 +22,20 @@ def efficiency_nego(all_efficiencies,tot_satisfied_agents):
     # print("total",tot_transactions)
     # print("traded",transaction_gap_ratio)
     # print("difference",tot_transactions-transaction_gap_ratio)
-    return (sum(all_efficiencies)/tot_satisfied_agents if tot_satisfied_agents != 0 else 0)
+    # compute efficiency
+    eff = []
+    for a in population:
+        if a.current_state["partner"] is not None:
+            assert(a.get_decision() is not None)
+            state=a.current_state["perception"]
+            attr=("production" if a.current_state['type']=="seller"
+                  else "consumption")              # buyer
+            efficiency=1-(state[attr]/state["old_"+str(attr)]) # one if all needs are satisfied, a fraction otherwise
+            eff.append(efficiency)
+        else:
+            eff.append(np.nan)
+    tot_satisfied_agents=np.count_nonzero(~np.isnan(eff))
+    return (np.nansum(eff)/tot_satisfied_agents if tot_satisfied_agents != 0 else np.nan)
 
 def success_nego(tot_agents,tot_satisfied_agents):
     """
@@ -36,7 +49,7 @@ def success_nego(tot_agents,tot_satisfied_agents):
         as per the number of agents getting partners
     """
     #print("success=",(tot_transactions*2-tot_agents)/tot_agents)
-    return (tot_satisfied_agents/tot_agents if tot_agents !=0 else 0)
+    return (tot_satisfied_agents/tot_agents if tot_agents !=0 else np.nan)
 
 def market_access(tot_agents,transactions):
     """
@@ -49,62 +62,66 @@ def market_access(tot_agents,transactions):
     """
     #print("success=",(tot_transactions*2-tot_agents)/tot_agents)
     trades=[(t['partner'] is not None and t['action'] is not None) for t in transactions]
+    # TODO should we check market access based on the satisfaction of needs (production-old_production)?
     return success_nego(tot_agents,sum(trades))
 
-def fairness(measurements,decisions,N):
-    """
-    Args:
-        decisions: list of decisions associated to every agent
-        measurements: list of measurements associated to every agent
-    Returns:
-        relation coefficient based on the measurements of agents being related to the decisions they take
-    """
-    if len(measurements)>N:
-        measurements = measurements[(len(measurements)-N):]
-    if len(decisions)>N:
-        decisions = decisions[(len(decisions)-N):]
-    assert(len(measurements)==len(decisions))
-    slope,intercept,rvalue,pvaue,stderr = linregress(measurements,decisions)
-    print("fairness =", slope)
-    return linregress(measurements,decisions)
+# def fairness(measurements,decisions,N):
+#     """
+#     Args:
+#         decisions: list of decisions associated to every agent
+#         measurements: list of measurements associated to every agent
+#     Returns:
+#         relation coefficient based on the measurements of agents being related to the decisions they take
+#     """
+#     if len(measurements)>N:
+#         measurements = measurements[(len(measurements)-N):]
+#     if len(decisions)>N:
+#         decisions = decisions[(len(decisions)-N):]
+#     assert(len(measurements)==len(decisions))
+#     slope,intercept,rvalue,pvaue,stderr = linregress(measurements,decisions)
+#     print("fairness =", slope)
+#     return linregress(measurements,decisions)
 
-def social_welfare(costs,rewards,N):
-    """
-    Computes the social welfare for the current round
-    Args:
-        costs: a list of costs, one for each agent
-        rewards: a list of rewards, one for each agent
-    Returns:
-        the social welfare value
-    """
-    # s = np.mean(np.array(rewards))-np.mean(np.array(costs))
-    s = np.mean(np.array(rewards))
-    return s if s>0 else 0
+# def social_welfare(costs,rewards,N):
+#     """
+#     Computes the social welfare for the current round
+#     Args:
+#         costs: a list of costs, one for each agent
+#         rewards: a list of rewards, one for each agent
+#     Returns:
+#         the social welfare value
+#     """
+#     # s = np.mean(np.array(rewards))-np.mean(np.array(costs))
+#     s = np.mean(np.array(rewards))
+#     return s if s>0 else 0
 
 
-def social_welfare_new(rewards):
-    x = [i for i in rewards if i > 0]
-    if np.count_nonzero(x)==1:
-        s=0
-    else:
-        if x:
-            s = min(i for i in rewards if i > 0)
-        else:
-            s = 0
-    return s
+# def social_welfare_new(rewards):
+#     x = [i for i in rewards if i > 0]
+#     if np.count_nonzero(x)==1:
+#         s=0
+#     else:
+#         if x:
+#             s = min(i for i in rewards if i > 0)
+#         else:
+#             s = 0
+#     return s
 
-def social_welfare_costs(costs,rewards,N):
-    """
-    Computes the social welfare for the current round
-    Args:
-        costs: a list of costs, one for each agent
-        rewards: a list of rewards, one for each agent
-    Returns:
-        the social welfare value
-    """
-    s = np.mean(np.array(rewards))-np.mean(np.array(costs))
-    # s = np.mean(np.array(rewards))
-    return s if s>0 else 0
+# def social_welfare_costs(costs,rewards,N):
+#     """
+#     Computes the social welfare for the current round
+#     Args:
+#         costs: a list of costs, one for each agent
+#         rewards: a list of rewards, one for each agent
+#     Returns:
+#         the social welfare value
+#     """
+#     s = np.mean(np.array(rewards))-np.mean(np.array(costs))
+#     # s = np.mean(np.array(rewards))
+#     return s if s>0 else 0
+
+def social_welfare_rawls(rewards):
+    return min(np.array(rewards)[~np.isnan(rewards)])
 
 def is_mediator_biased(bias_mediator):
     '''
@@ -130,4 +147,4 @@ def split_bids(l,splitsize=1.0):
                                 for i in [1]*int(s['value']//splitsize)+[s['value']%splitsize]] # divide in bids of size splitsize
 
 def reward_agent(decision):
-    return (1 if decision["action"] is not None else 0)
+    return (1 if decision["action"] is not None else np.nan)

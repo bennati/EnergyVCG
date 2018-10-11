@@ -19,24 +19,12 @@ class NegoEvaluationLogic(BaseEvaluationLogic):
         Returns:
         A list of dictionaries containing the evaluation of the population behavior
         """
-        # compute efficiency
-        eff = []
-        for a in self.model.schedule.agents:
-            if a.current_state["partner"] is not None:
-                assert(a.get_decision() is not None)
-                state=a.current_state["perception"]
-                attr=("production" if a.current_state['type']=="seller"
-                      else "consumption")              # buyer
-                efficiency=1-(state[attr]/state["old_"+str(attr)]) # one if all needs are satisfied, a fraction otherwise
-                eff.append(efficiency)
-            else:
-                eff.append(0)
         rewards=[i["reward"] for i in rewards]
-        return [{"social_welfare":social_welfare_new(rewards),
+        return [{"social_welfare":social_welfare_rawls(rewards),
                  #"social_welfare_high":social_welfare_new(rewards_high),
                  #"social_welfare_low":social_welfare_new(rewards_low),
                  "gini":gini([i["action"] for i in decisions if i is not None]),
-                 "efficiency":efficiency_nego(eff,np.count_nonzero(eff)), # sum efficiencies (each is between 0 and 1) and divide by the number of agents whose efficency is greater than 0
+                 "efficiency":efficiency_nego(self.model.schedule.agents), # sum efficiencies (each is between 0 and 1) and divide by the number of agents whose efficency is greater than 0
                  # TODO is the formula of efficiency correct?
                  "market_access":market_access(self.model.N,decisions), # agents that traded
                  #"market_access_high":success_nego(N_low,tot_high_agents),
