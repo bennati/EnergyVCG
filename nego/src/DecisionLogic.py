@@ -17,7 +17,7 @@ class NegoDecisionLogic(BaseDecisionLogic):
         # partner = self.model.partner_selection_orderbid()
         self.act=[{"production":p["production"],"consumption":p["consumption"],
                    "tariff":p["tariff"],"agentID":a.unique_id,
-                   "contribution":0,"contributed":False,"cost":a.current_state["cost"], # TODO why is contribution always 0?
+                   "cost":a.current_state["cost"],
                    "reward":a.current_state["reward"],"action":a.current_state["action"],
                    "partner":a.current_state["partner"],"social_type":p["social_type"],
                    "biased":p["biased"],"bias_mediator":p["bias_mediator"]}

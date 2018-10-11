@@ -89,9 +89,9 @@ import os
 class MeasurementGenReal(BaseMeasurementGen):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.mu1=kwargs["mu1"]
+        self.cons_lo=kwargs["consumption_low"]
         self.s1=1
-        self.mu2=kwargs["mu2"]
+        self.cons_hi=kwargs["consumption_high"]
         self.s2=0.5
         self.t=int(kwargs["T"])
         self.n=int(kwargs["N"])
@@ -130,8 +130,8 @@ class MeasurementGenReal(BaseMeasurementGen):
             tariff=self.tariff_data.ix[timestep,"inrpriceperkwh"+str(int(self.tariff_avg))]
             castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste, true means low caste
             ret=[{"consumption":positive_sampling(
-                (self.mu1 if caste else self.mu2)
-                ,self.s1),
+                (self.cons_lo if caste else self.cons_hi)
+                ,(self.s1 if caste else self.s2)),
                   "tariff":positive_sampling(float(tariff),self.s2), # a value normally distributed around the value in the data
                   "social_type":(1 if caste else 2),
                   "production":individual_production(income[i],self.produce_avg,self.caste,self.produce_low,self.produce_high),
