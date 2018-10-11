@@ -25,7 +25,7 @@ class BaseSupervisor(Model):
             raise AssertionError("Initializing empty population")
         self.decision_fct=decision_fct(self)
         self.reward_fct=reward_fct(self)
-        self.evaluation_fct=evaluation_fct()
+        self.evaluation_fct=evaluation_fct(self)
         self.agent_decision_fct=agent_decision_fct # keep it a class as it will be instanciated in the agent init
         self.agent_type=agent_type
         self.log=[]
@@ -171,7 +171,7 @@ class BaseSupervisor(Model):
         if perceptions is None:
             perceptions=self.current_state["perception"]
         # debug
-        tmp=pd.merge(pd.DataFrame(perceptions),pd.DataFrame(decisions),on=["agentID"])
+        # tmp=pd.merge(pd.DataFrame(perceptions),pd.DataFrame(decisions),on=["agentID"])
         # assert(((tmp["value"] == tmp["contribution"]) | np.isnan(tmp["contribution"])).all())
         # assert(((tmp["cost_x"] == tmp["cost_y"]) | np.isnan(tmp["cost_y"])).all())
             # assert(all([p["cost"]==d["cost"] for p,d in zip(self.current_state["perception"],decisions)]))
@@ -208,6 +208,8 @@ class BaseSupervisor(Model):
         Returns:
         A list of measures on the population behavior
         """
+        if threshold is None:
+            threshold=1
         if rewards is None:
             assert(self.current_state["reward"] is not None)
             rewards=self.current_state["reward"]

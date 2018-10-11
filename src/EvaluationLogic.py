@@ -1,7 +1,7 @@
 import numpy as np
 from utils import *
 class BaseEvaluationLogic():
-    def __init__(self):
+    def __init__(self,model):
         np.random.seed()
 
     def get_evaluation(self,decisions,rewards,threshold=None):
