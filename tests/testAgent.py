@@ -47,13 +47,13 @@ class DecisionLogicTesting(BaseDecisionLogic):
     Returns a constant decision
     """
     def get_decision(self,perceptions):
-        self.last_actions="act"
-        return self.last_actions
+        self.act="act"
+        return self.act
 
 class DecisionLogicTestingDynamic(BaseDecisionLogic):
     """
     Returns a decision that depends on the perception length
     """
     def get_decision(self,perceptions):
-        self.last_actions=len(perceptions)
-        return self.last_actions
+        self.act=len(perceptions)
+        return self.act

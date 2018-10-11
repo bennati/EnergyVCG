@@ -1,12 +1,13 @@
 import unittest
-from Supervisor import BaseSupervisor
-from Agent import BaseAgent
+from src.Supervisor import BaseSupervisor
+from src.Agent import BaseAgent
 from mesa.time import RandomActivation
 import numpy as np
-from MeasurementGen import *
-from DecisionLogic import *
-from RewardLogic import *
-from EvaluationLogic import *
+from src.MeasurementGen import *
+from src.DecisionLogic import *
+from src.RewardLogic import *
+from src.EvaluationLogic import *
+import functools
 
 class TestBaseSupervisor(unittest.TestCase):
     """
@@ -17,7 +18,8 @@ class TestBaseSupervisor(unittest.TestCase):
         super(TestBaseSupervisor, self).__init__(*args, **kwargs)
         self.N=np.random.randint(1,100)
         #self.N=5
-        self.s=BaseSupervisor(self.N,evaluation_fct=EmptyEvaluationLogic)
+        f=functools.partial(BaseMeasurementGen,self.N)
+        self.s=BaseSupervisor(self.N,measurement_fct=f,evaluation_fct=EmptyEvaluationLogic)
 
     def test_init_population(self):
         """
@@ -107,7 +109,7 @@ class TestBaseSupervisor(unittest.TestCase):
         self.s.decision_fct=DecisionLogicTesting() # update the decision logic
         self.s.measurement_fct=MeasurementGenTesting()
         self.s.step()
-        self.assertNotEqual(self.s.decision_fct.last_actions,None) # actions have been updated
+        self.assertNotEqual(self.s.decision_fct.act,None) # actions have been updated
         self.assertEqual(self.s.current_state["perception"],self.s.decision_fct.values["p"]) # perception has been updated
         self.assertEqual(self.s.current_state["reward"],self.s.decision_fct.values["r"]) # rewards have been updated
 
@@ -119,15 +121,16 @@ class TestBaseSupervisor(unittest.TestCase):
             a.decision_fct=DecisionLogicTestingDynamic(a) # update decision fcts of agents
         self.s.decision_fct=DecisionLogicSupervisorTesting(self.s) # update supervisor's decision fct
         percs=[{j:j for j in range(i)} for i in range(len(self.s.schedule.agents))]        # create perceptions
-        decs=self.s.decisions(percs)
-        self.assertEqual(len(decs["agents"]),self.s.N)
-        self.assertEqual(decs["agents"],list(range(self.s.N)))
+        decs=[d["decision"] for d in self.s.decisions(percs)]
+        self.assertEqual(len(decs),self.s.N)
+        self.assertEqual(decs,list(range(self.s.N)))
         # check that the decision is correctly updated after every timestep
         self.s.step()
         self.s.step()
-        decs=self.s.decisions(percs)
-        self.assertEqual(decs["agents"],list(range(self.s.N))) # actions do not change
-        self.assertEqual(decs["timestep"],2)                      # timestamp is updated
+        decs=[d["decision"] for d in self.s.decisions(percs)]
+        ts=[d["timestep"] for d in self.s.decisions(percs)]
+        self.assertEqual(decs,list(range(self.s.N))) # actions do not change
+        self.assertTrue(all([t==2 for t in ts]))                      # timestamp is updated
 
 class DecisionLogicTesting(BaseDecisionLogic):
 
@@ -142,15 +145,15 @@ class DecisionLogicTestingDynamic(BaseDecisionLogic):
     Returns a constant decision
     """
     def get_decision(self,perceptions):
-        self.last_actions=len(perceptions)
-        return self.last_actions
+        self.act=len(perceptions)
+        return self.act
 
 class DecisionLogicSupervisorTesting(BaseDecisionLogic):
     """
     Returns a constant decision
     """
     def get_decision(self,perceptions):
-        decs={"timestep":self.model.schedule.steps,"agents":[a.decisions(perceptions[n]) for a,n in zip(self.model.schedule.agents,range(self.model.N))]} # call each agent's decision fct with the appropriate perception
+        decs=[{"agentID":a.unique_id,"timestep":self.model.schedule.steps,"decision":a.decisions(perceptions[n])} for a,n in zip(self.model.schedule.agents,range(self.model.N))] # call each agent's decision fct with the appropriate perception
         return decs
 
 
@@ -177,7 +180,8 @@ class TestBaseMeasurementGen(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestBaseMeasurementGen, self).__init__(*args, **kwargs)
         self.N=np.random.randint(1,100)
-        self.s=BaseSupervisor(self.N)
+        f=functools.partial(BaseMeasurementGen,self.N)
+        self.s=BaseSupervisor(self.N,measurement_fct=f)
 
     def test_dict(self):
         """
