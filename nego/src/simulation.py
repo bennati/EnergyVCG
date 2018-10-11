@@ -2,7 +2,7 @@ import functools
 import itertools
 import pandas as pd
 import numpy as np
-from src.Supervisor import BaseSupervisor
+from nego.src.Supervisor import NegoSupervisor
 from src.DecisionLogic import BaseDecisionLogic
 from nego.src.DecisionLogic import NegoDecisionLogic
 from nego.src.RewardLogic import NegoRewardLogic
@@ -29,7 +29,7 @@ def run_experiment(test,conf,datadir="./"):
             params=p.to_dict()
             params.update({"repetition":r})
             f=functools.partial(conf["meas_fct"],**params)
-            model=BaseSupervisor(N=int(params["N"]),measurement_fct=f,
+            model=NegoSupervisor(N=int(params["N"]),measurement_fct=f,
                                  bidsplit=conf['bidsplit'],multibid=conf['multibid'],
                                  decision_fct=conf["dec_fct"],
                                  agent_decision_fct=conf["dec_fct_agent"],

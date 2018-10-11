@@ -1,6 +1,7 @@
 import numpy as np
 class BaseMeasurementGen():
-    def __init__(self):
+    def __init__(self,N=None):
+        self.n=N
         np.random.seed()
         pass
 

@@ -94,6 +94,7 @@ class MeasurementGenReal(BaseMeasurementGen):
         self.mu2=kwargs["mu2"]
         self.s2=0.5
         self.t=int(kwargs["T"])
+        self.n=int(kwargs["N"])
         if self.t is None:
             print("setting t to default")
             self.t=1000
@@ -138,6 +139,6 @@ class MeasurementGenReal(BaseMeasurementGen):
                   "bias_mediator":is_mediator_biased(self.bias_mediator),
                   # "chance_rich":np.random.uniform()<self.chancer, # TODO should being rich depend on the income?
                   "agentID":0, "income":renormalize(income[i],[mi,ma],[0,1])[0],
-                  "main_cost":0.1,"cost":0,"timestep":timestep,"type":None}
+                  "main_cost":0.1,"cost":0,"timestep":timestep,"type":None,"threshold":-1}
                  for i,caste in enumerate(castes)]  # high class is 2, low class is 1, main_cost is maintenance cost
             return ret

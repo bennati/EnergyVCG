@@ -17,6 +17,7 @@ class BaseEvaluationLogic():
         A list of dictionaries containing the evaluation of the population behavior
         """
         contributions,values,costs=zip(*[(d["contributed"],d["contribution"],d["cost"]) for d in decisions])
+        print(rewards)
         rews=[i["reward"] for i in rewards]
         tc=tot_contributions([int(c) for c in contributions])
         return [{"gini":gini(values),

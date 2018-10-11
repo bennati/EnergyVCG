@@ -11,21 +11,24 @@ from src.utils import *
 
 class BaseSupervisor(Model):
 
-    def __init__(self,N,measurement_fct=BaseMeasurementGen,decision_fct=BaseDecisionLogic,agent_decision_fct=BaseDecisionLogic,reward_fct=BaseRewardLogic,evaluation_fct=BaseEvaluationLogic,agent_type=BaseAgent,T=0,bidsplit=False,multibid=False):
+    def __init__(self,N,measurement_fct=BaseMeasurementGen,decision_fct=BaseDecisionLogic,agent_decision_fct=BaseDecisionLogic,reward_fct=BaseRewardLogic,evaluation_fct=BaseEvaluationLogic,agent_type=BaseAgent,T=0):
         super().__init__()
         # parameters
-        self.bidsplit=bidsplit
-        self.multibid=multibid
         self.measurement_fct=measurement_fct()
+        if self.measurement_fct.n!=int(N):
+            print("warning, setting N according to what provided by measurement fct")
+            self.N=self.measurement_fct.n
+        else:
+            self.N=int(N)
+        self.T=int(T)
+        if self.N is None or self.N<=0:
+            raise AssertionError("Initializing empty population")
         self.decision_fct=decision_fct(self)
         self.reward_fct=reward_fct(self)
         self.evaluation_fct=evaluation_fct(self)
         self.agent_decision_fct=agent_decision_fct # keep it a class as it will be instanciated in the agent init
         self.agent_type=agent_type
         self.log=[]
-        self.N=N
-        if self.N<=0:
-            raise AssertionError("Initializing empty population")
         self.schedule = RandomActivation(self)
         self.__create_agents()
         self.current_state={"perception":self.perception_dict(0),"reward":[0]*self.N}
@@ -44,8 +47,7 @@ class BaseSupervisor(Model):
         N: the size of the population
 
         Kwargs:
-        population: a list of agents with which to initialize the population,
-        if the parameter is not provided a new population is initialized
+        population: a list of agents with which to initialize the population, if the parameter is not provided a new population is initialized
         agent_type: the class of agents
 
         Returns:
@@ -89,12 +91,9 @@ class BaseSupervisor(Model):
         """
         if perceptions is None:
             perceptions=self.current_state["perception"]
-        partner = self.partner_set()
         decisions=self.decision_fct.get_decision(perceptions) # call own decision fct
         return decisions
 
-    def partner_set(self):
-        return self.decision_fct.get_partner(self.schedule.agents,bidsplit=self.bidsplit,multibid=self.multibid)
 
     def __learn(self,perceptions,reward):
         """
@@ -240,14 +239,18 @@ class BaseSupervisor(Model):
         perception=self.perception_dict(self.schedule.steps) # generate measurements
         self.current_state.update({"perception":perception}) # generate measurements
         if perception is None:
-            print("no more data input, terminating at time "+str(self.schedule.steps))
+            # print("no more data input, terminating at time "+str(self.schedule.steps))
             return None
         else:
             self.current_state.update({"timestep":self.schedule.steps})
+            thresh=[p["threshold"] if "threshold" in p.keys() else None for p in perception]
+            thresh=[t for t in thresh if t is not None]
+            thresh=max(thresh) if len(thresh)>0 else None
             self.perception()               # communicate them to agents
             self.schedule.step()    # agents decide
             decisions=self.decisions(perception) # collect decisions
             self.current_state.update({"decisions":decisions}) # collect decisions
             self.current_state.update({"reward":self.feedback(decisions)})
-            self.current_state.update({"evaluation":self.evaluate(decisions)})
+            self.current_state.update({"evaluation":self.evaluate(decisions,threshold=thresh)})
+            return 1
             #self.__log()

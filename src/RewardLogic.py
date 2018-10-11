@@ -9,4 +9,5 @@ class BaseRewardLogic():
         """
         Returns a list of dictionaries containing the reward (float) for each agent
         """
-        return [{"reward":0}]*len(decisions)
+        print(decisions)
+        return [{"agentID":d["agentID"],"reward":0} for d in decisions]
