@@ -127,7 +127,8 @@ class MeasurementGenReal(BaseMeasurementGen):
             income = [np.random.uniform(mi,ma) for i in range(len(population))] # a uniformly distributed income for each agent
             # production = [self.produce_avg*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
             ## TODO, why is the tariff generated from the third column while the documentation talks about the second column?
-            tariff=self.tariff_data.ix[timestep,"inrpriceperkwh"+str(int(self.tariff_avg))]
+            tariff=self.tariff_data.ix[timestep%self.tariff_data.shape[0], # after 24 hours the day repeats
+                                       "inrpriceperkwh"+str(int(self.tariff_avg))] # choose the column in the data
             castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste, true means low caste
             ret=[{"consumption":positive_sampling(
                 (self.cons_lo if caste else self.cons_hi)
