@@ -16,7 +16,7 @@ default_params={"reps":10,       # how many times to repeat the experiments
                     "N":Ns,                          # population size
                     "low_caste":[0.36], # proportion of low caste agents
                     "T":[10],                        # the duration of a run
-                    "produce_avg":[1],                          # determines average production
+                    "produce_avg":[0.0001], # determines average production, useful to rescale production and consumption to the same magnitude
                     "tariff_avg":[1],    # determines the data for generating the tariffs, 1 2 or 3
                     "min_income":[20000],"max_income":[100000], # used to produce the income values
                     # "chance_rich":[0.2],"chance_poor":[0.5],    # proportion of rich and poor in each class, TODO used??

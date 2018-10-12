@@ -121,7 +121,7 @@ def market_access(tot_agents,transactions):
 #     return s if s>0 else 0
 
 def social_welfare_rawls(rewards):
-    return min(np.array(rewards)[~np.isnan(rewards)])
+    return (np.nan if all(np.isnan(rewards)) else min(np.array(rewards)[~np.isnan(rewards)]))
 
 def is_mediator_biased(bias_mediator):
     '''
@@ -147,4 +147,4 @@ def split_bids(l,splitsize=1.0):
                                 for i in [1]*int(s['value']//splitsize)+[s['value']%splitsize]] # divide in bids of size splitsize
 
 def reward_agent(decision):
-    return (1 if decision["action"] is not None else np.nan)
+    return (1 if decision["action"] is not None else np.nan) # TODO, consider lack of rewards? set 0 instead of np.nan
