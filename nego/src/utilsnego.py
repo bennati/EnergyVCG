@@ -7,6 +7,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+import os
+from src.utils import compute_stats,renormalize,positive_sampling
 #rcParams.update({'figure.autolayout': True})
 
 def efficiency_nego(population):
@@ -148,3 +150,38 @@ def split_bids(l,splitsize=1.0):
 
 def reward_agent(decision):
     return (1 if decision["action"] is not None else np.nan) # TODO, consider lack of rewards? set 0 instead of np.nan
+
+def compute_incomes(df,castes):
+    f=lambda caste,value,binno=None: df[(df['caste']==("Dalit" if caste else "Other")) & (True if binno is None else df['income_min']==binno)][value]
+    bins=[np.random.choice(f(c,'income_min'), # determine income level randomly
+                           p=f(c,'value_mean')/f(c,'value_mean').sum() # from the probability that a given caste has a given income level
+    ) for c in castes]
+    return [np.random.uniform(b,float(f(c,'income_max',binno=b))) for b,c in zip(bins,castes)]
+
+def read_income_data(datadir):
+    byincome=pd.read_csv(os.path.join(datadir,"income_byincome.csv")).drop("Per capita income category (Rs per annum)",axis=1)
+    byvillage=pd.read_csv(os.path.join(datadir,"income_byvillage.csv")) # contains the proportion of dalits in village
+    ## aggregate villages
+    index=["income_min","income_max"]
+    byincome=pd.melt(byincome,id_vars=index) # make the table long
+    byincome["village"],byincome["caste"]=byincome["variable"].str.split(' ',1).str # split village and caste
+    ## multiply proportions of dalits in each income level by their proportion in the village
+    byincome['value_norm']=byincome[['value','village','caste']].apply(lambda x: x.value/100.0*float(byvillage.loc[byvillage["Village"]==x.village,x.caste+"_prop"]),axis=1)
+    return compute_stats(byincome,idx=index+["caste"],columns=["value","value_norm"]),byvillage
+
+def compute_consumptions(consumption_data,deviation,incomes,max_income,avg_cons_india=469.454,avg_cons_usa=13704.577,btu_2_kwh=0.000293071):
+    incomes_usd=[renormalize(i,[0,max_income],[0,consumption_data.income_max.max()])[0] for i in incomes]
+    consumptions=[float(consumption_data.loc[(consumption_data.income_min<=i) & (consumption_data.income_max>=i),'Per household (million Btu)']) for i in incomes_usd]
+    consumptions=[c*10e6*btu_2_kwh/avg_cons_usa*avg_cons_india for c in consumptions] # rescale for India, now in kWh
+    return [positive_sampling(c,deviation) for c in consumptions]
+
+def compute_productions(incomes,yearly_disposable_income=0.2,installment_cost=1600,device_production=8):
+    """
+    Individuals must be able to afford the cost of the equipment to produce energy.
+    Survey data shows that the households belonging to the bottom quintiles spends around 20\% on other expenses, which we consider disposable income to pay for electricity production.
+    Given that a device with a production of 8kWh costs around 1600 Rupees and the lifespan of a solar panel is around 20 years, we assume households invest all of their disposable income for the following 20 years to buy as many devices as they can afford.
+    """
+    return [i*yearly_disposable_income*20 # total disposable income over lifespan of panel
+            //installment_cost               # how many panels one can afford
+            *device_production              # convert to kWh
+            for i in incomes] # the affordable device produces this many kWh

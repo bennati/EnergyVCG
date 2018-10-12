@@ -215,6 +215,7 @@ class BaseSupervisor(Model):
         """
         To be called from outside so that the frequency of logging is independent
         """
+        params={k:(np.nan if v is None else v) for k,v in params.items()} # convert None (e.g. 'low_caste') to nan for computing statistics
         dct=self.current_state.copy()
         # convert contents to tables
         for k,v in dct.items():

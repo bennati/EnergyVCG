@@ -14,15 +14,11 @@ default_params={"reps":10,       # how many times to repeat the experiments
                 "dec_fct":NegoDecisionLogic,"dec_fct_agent":BaseDecisionLogic,"rew_fct":NegoRewardLogic, "eval_fct":NegoEvaluationLogic,"meas_fct":MeasurementGenReal, # the logic to use during the experiments
                 "params":{                           # the parameters of the experiments
                     "N":Ns,                          # population size
-                    "low_caste":[0.36], # proportion of low caste agents
+                    "low_caste":[None], # proportion of low caste agents, when None it uses the proportion in the data
                     "T":[10],                        # the duration of a run
                     "produce_avg":[0.0001], # determines average production, useful to rescale production and consumption to the same magnitude
                     "tariff_avg":[1],    # determines the data for generating the tariffs, 1 2 or 3
-                    "min_income":[20000],"max_income":[100000], # used to produce the income values
-                    # "chance_rich":[0.2],"chance_poor":[0.5],    # proportion of rich and poor in each class, TODO used??
-                    "consumption_low":[2.0],"consumption_high":[5.0],                    # determine average consumption, low and high class
-                    "sellers_low":[1.0],"sellers_high":[1.0],         # proportion of individuals in low and high caste that produce energy (sellers)
-                    # "buyers_low":[1.0],"buyers_high":[1.0],         # all agents are assumed to require energy
+                    "consumption_dev":[10.0],                    # determines the variability of consumptions
                     "bias_low":[0.0],"bias_high":[0.0], # bias for agents, low and high caste
                     "bias_degree":[0.0]                 # bias for mediator
                 }}

@@ -1,9 +1,7 @@
 import numpy as np
 from src.MeasurementGen import BaseMeasurementGen
-from src.utils import renormalize
-from src.utils import positive_sampling
+from src.utils import renormalize,positive_sampling,compute_stats
 from nego.src.utilsnego import *
-import csv
 from numpy.random import choice
 import pandas as pd
 import os
@@ -89,29 +87,27 @@ import os
 class MeasurementGenReal(BaseMeasurementGen):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.cons_lo=kwargs["consumption_low"]
-        self.s1=1
-        self.cons_hi=kwargs["consumption_high"]
-        self.s2=0.5
+        self.cons_dev=kwargs["consumption_dev"]
+        self.tariffdev=0.5
         self.t=int(kwargs["T"])
         self.n=int(kwargs["N"])
         if self.t is None:
             print("setting t to default")
             self.t=1000
-        self.produce_low = kwargs["sellers_low"] # proportion of agents who can produce in lower caste
-        self.produce_high = kwargs["sellers_high"] # proportion of agents who can produce in higher caste
         self.caste=kwargs["low_caste"] # proportion of agents in low caste
         self.biased_low=kwargs["bias_low"]  # proportion of biased agents among low caste
         self.biased_high = kwargs["bias_high"] # proportion of biased agents among high caste
         self.bias_mediator = kwargs["bias_degree"] # probability of mediator being biased
         self.tariff_avg = kwargs["tariff_avg"]
         self.produce_avg = kwargs["produce_avg"]
-        self.min_income=kwargs["min_income"]
-        self.max_income=kwargs["max_income"]
         # self.chancer=kwargs["chance_rich"]
         # self.chancerp=kwargs["chance_poor"]
         datadir='datasets'
         self.tariff_data=pd.read_csv(os.path.join(datadir,"tariff.csv"))
+        self.consumption_data=pd.read_csv(os.path.join(datadir,"Consumption_data.csv"))
+        self.caste_byincome,byvillage=read_income_data(datadir)
+        if self.caste is None:
+            self.caste=byvillage['Dalit_prop'].mean()/100
 
     def get_measurements(self,population,timestep):
         """
@@ -120,26 +116,24 @@ class MeasurementGenReal(BaseMeasurementGen):
         if timestep>self.t:
             return None
         else:
-            mi=self.min_income
-            ma=self.max_income
-            assert(mi>=0)
-            assert(ma>mi)
-            income = [np.random.uniform(mi,ma) for i in range(len(population))] # a uniformly distributed income for each agent
             # production = [self.produce_avg*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
             ## TODO, why is the tariff generated from the third column while the documentation talks about the second column?
+            ## compute current tariff
             tariff=self.tariff_data.ix[timestep%self.tariff_data.shape[0], # after 24 hours the day repeats
                                        "inrpriceperkwh"+str(int(self.tariff_avg))] # choose the column in the data
+            ## compute castes, start from the data about proportion of Dalit individuals in rural villages
             castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste, true means low caste
-            ret=[{"consumption":positive_sampling(
-                (self.cons_lo if caste else self.cons_hi)
-                ,(self.s1 if caste else self.s2)),
-                  "tariff":positive_sampling(float(tariff),self.s2), # a value normally distributed around the value in the data
+            incomes=compute_incomes(self.caste_byincome,castes) # compute incomes based on real data
+            consumptions=compute_consumptions(self.consumption_data,self.cons_dev,incomes,self.caste_byincome.income_max.max())
+            productions=[i*self.produce_avg for i in compute_productions(incomes)]
+            ret=[{"consumption":consumptions[i],
+                  "tariff":positive_sampling(float(tariff),self.tariffdev), # a value normally distributed around the value in the data
                   "social_type":(1 if caste else 2),
-                  "production":individual_production(income[i],self.produce_avg,self.caste,self.produce_low,self.produce_high),
+                  "production":productions[i],
                   "biased":is_biased(caste,self.biased_low,self.biased_high),
                   "bias_mediator":is_mediator_biased(self.bias_mediator),
                   # "chance_rich":np.random.uniform()<self.chancer, # TODO should being rich depend on the income?
-                  "agentID":0, "income":renormalize(income[i],[mi,ma],[0,1])[0],
+                  "agentID":0, "income":incomes[i],
                   "main_cost":0.1,"cost":0,"timestep":timestep,"type":None,"threshold":-1}
                  for i,caste in enumerate(castes)]  # high class is 2, low class is 1, main_cost is maintenance cost
             return ret
