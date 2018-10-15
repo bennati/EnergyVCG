@@ -120,7 +120,7 @@ class MeasurementGenReal(BaseMeasurementGen):
             ## TODO, why is the tariff generated from the third column while the documentation talks about the second column?
             ## compute current tariff
             tariff=self.tariff_data.ix[timestep%self.tariff_data.shape[0], # after 24 hours the day repeats
-                                       "inrpriceperkwh"+str(int(self.tariff_avg))] # choose the column in the data
+                                       "inrpriceperkwh"]*int(self.tariff_avg) # choose the column in the data
             ## compute castes, start from the data about proportion of Dalit individuals in rural villages
             castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste, true means low caste
             incomes=compute_incomes(self.caste_byincome,castes) # compute incomes based on real data
