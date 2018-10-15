@@ -7,7 +7,6 @@ from nego.src.Evaluation import  NegoEvaluationLogic
 from nego.src.simulation import *
 
 Ns=[20,30,50,70,100]
-prods=[1.0,2.0,3.0,5,0]
 biases=[0.0,0.2,0.5,0.8]
 
 default_params={"reps":10,       # how many times to repeat the experiments
@@ -16,22 +15,15 @@ default_params={"reps":10,       # how many times to repeat the experiments
                     "N":Ns,                          # population size
                     "low_caste":[None], # proportion of low caste agents, when None it uses the proportion in the data
                     "T":[10],                        # the duration of a run
-                    "produce_avg":[0.0001], # determines average production, useful to rescale production and consumption to the same magnitude
+                    "consumption_offset":[5.0], # offsets the consumption, as househols is the USA have higher needs than rural households (the value makes consumption and production comparable)
                     "tariff_avg":[1],    # determines the data for generating the tariffs, 1 2 or 3
                     "consumption_dev":[10.0],                    # determines the variability of consumptions
                     "bias_low":[0.0],"bias_high":[0.0], # bias for agents, low and high caste
-                    "bias_degree":[0.0]                 # bias for mediator
+                    "bias_mediator":[0.0]                 # bias for mediator
                 }}
 test_N={             # bid splitting should increase efficiency
     "test_N":{**default_params,"bidsplit":False,"multibid":False,
                        'params':{**default_params['params']}}}
-test_production={           # higher production should reduce efficiency if bid splitting is disabled
-    "test_prod_nosplit":{**default_params,"bidsplit":False,"multibid":False,
-                       'params':{**default_params['params'],
-                                 "N":Ns,"produce_avg":prods}},
-    "test_prod_split":{**default_params,"bidsplit":True,"multibid":False,
-                       'params':{**default_params['params'],
-                                 "N":Ns,"produce_avg":prods}}}
 test_bidsplit={             # bid splitting should increase efficiency
     "test_nobidsplit":{**default_params,"bidsplit":False,"multibid":False,
                        'params':{**default_params['params'],

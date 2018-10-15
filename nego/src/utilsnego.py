@@ -169,10 +169,13 @@ def read_income_data(datadir):
     byincome['value_norm']=byincome[['value','village','caste']].apply(lambda x: x.value/100.0*float(byvillage.loc[byvillage["Village"]==x.village,x.caste+"_prop"]),axis=1)
     return compute_stats(byincome,idx=index+["caste"],columns=["value","value_norm"]),byvillage
 
-def compute_consumptions(consumption_data,deviation,incomes,max_income,avg_cons_india=469.454,avg_cons_usa=13704.577,btu_2_kwh=0.000293071):
+def compute_consumptions(consumption_data,deviation,incomes,max_income,avg_cons_india=805.599,avg_cons_usa=12984.333,btu_2_kwh=0.000293071): #2005 data: avg_cons_india=469.454,avg_cons_usa=13704.577
     incomes_usd=[renormalize(i,[0,max_income],[0,consumption_data.income_max.max()])[0] for i in incomes]
     consumptions=[float(consumption_data.loc[(consumption_data.income_min<=i) & (consumption_data.income_max>=i),'Per household (million Btu)']) for i in incomes_usd]
-    consumptions=[c*10e6*btu_2_kwh/avg_cons_usa*avg_cons_india for c in consumptions] # rescale for India, now in kWh
+    consumptions=[c/365                  # get daily value
+                  *10e6*btu_2_kwh        # convert to kWh
+                  *avg_cons_india/avg_cons_usa # rescale for indian market
+                  for c in consumptions]
     return [positive_sampling(c,deviation) for c in consumptions]
 
 def compute_productions(incomes,yearly_disposable_income=0.2,installment_cost=1600,device_production=8):

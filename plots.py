@@ -84,7 +84,7 @@ varnames=[["N","number of agents"],
 
 treatments=[["test_prod_split","Split"],["test_prod_nosplit","No Split"]]
 varnames=[["N","number of agents"],
-          ["produce_avg","Production"]]
+          ["Production"]]
 
 measures=[["efficiency","Efficiency"],["gini","Inequality, number of sellers and buyers"],
           ["social_welfare","social welfare"],

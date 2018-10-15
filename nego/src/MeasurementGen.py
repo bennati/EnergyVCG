@@ -97,9 +97,9 @@ class MeasurementGenReal(BaseMeasurementGen):
         self.caste=kwargs["low_caste"] # proportion of agents in low caste
         self.biased_low=kwargs["bias_low"]  # proportion of biased agents among low caste
         self.biased_high = kwargs["bias_high"] # proportion of biased agents among high caste
-        self.bias_mediator = kwargs["bias_degree"] # probability of mediator being biased
+        self.bias_mediator = kwargs["bias_mediator"] # probability of mediator being biased
         self.tariff_avg = kwargs["tariff_avg"]
-        self.produce_avg = kwargs["produce_avg"]
+        self.consumption_offset = kwargs["consumption_offset"]
         # self.chancer=kwargs["chance_rich"]
         # self.chancerp=kwargs["chance_poor"]
         datadir='datasets'
@@ -116,7 +116,7 @@ class MeasurementGenReal(BaseMeasurementGen):
         if timestep>self.t:
             return None
         else:
-            # production = [self.produce_avg*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
+            # production = [self.consumption_offset*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
             ## TODO, why is the tariff generated from the third column while the documentation talks about the second column?
             ## compute current tariff
             tariff=self.tariff_data.ix[timestep%self.tariff_data.shape[0], # after 24 hours the day repeats
@@ -125,7 +125,8 @@ class MeasurementGenReal(BaseMeasurementGen):
             castes=[np.random.uniform()<self.caste for _ in range(len(population))] # determine the caste, true means low caste
             incomes=compute_incomes(self.caste_byincome,castes) # compute incomes based on real data
             consumptions=compute_consumptions(self.consumption_data,self.cons_dev,incomes,self.caste_byincome.income_max.max())
-            productions=[i*self.produce_avg for i in compute_productions(incomes)]
+            consumptions=[i*self.consumption_offset for i in consumptions]
+            productions=compute_productions(incomes)
             ret=[{"consumption":consumptions[i],
                   "tariff":positive_sampling(float(tariff),self.tariffdev), # a value normally distributed around the value in the data
                   "social_type":(1 if caste else 2),
