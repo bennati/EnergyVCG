@@ -53,8 +53,10 @@ class NegoDecisionLogic(BaseDecisionLogic):
                 sellers.append({"agent":a,"action":None,"partner":None,"value":a.current_state["perception"]["production"],"agent_bid":a.current_state["perception"]["tariff"]})
             elif a.current_state["type"] == "buyer":
                 buyers.append({"agent":a,"action":None,"partner":None,"value":a.current_state["perception"]["consumption"],"agent_bid":a.current_state["perception"]["tariff"]})
+            elif a.current_state["type"] is None:
+                pass
             else:
-                print(a.current_state["type"])
+                raise ValueError("Wrong type: "+str(a.current_state["type"]))
         if bidsplit: ## split in smaller bids, duplicate dict entries with different bids
             sellers=split_bids(sellers); buyers=split_bids(buyers)
         sellers_sorted = sorted(sellers,key=operator.itemgetter('agent_bid')) # ascending
@@ -71,7 +73,7 @@ class NegoDecisionLogic(BaseDecisionLogic):
             if self.trade_allowed(seller["agent"],buyer["agent"]): # trade is not prevented
                 # print("-------------------- SELLERS "+str([p["value"] for p in sellers_sorted]))
                 # print("-------------------- BUYERS "+str([p["value"] for p in buyers_sorted]))
-                if sv !=0 and bv!=0:  # can trade
+                if sv !=0 and bv !=0:  # can trade
                     ## update dictionary with new actions and partners
                     seller=self.update_partner(1,seller,buyer) # sell
                     buyer=self.update_partner(2,buyer,seller) # buy
@@ -88,12 +90,11 @@ class NegoDecisionLogic(BaseDecisionLogic):
                         seller["value"]=0; buyer["value"]=-k
                         if multibid:
                             j-=1 # keep current buyer, which has more to trade
-                            print(j)
                         # print("NEW CONS "+str(buyer["value"]))
                 else:
                     print("?????????????????????????????? BREAK")
-                    print(sv)
-                    print(bv)
+                    print("seller "+str(sv)+" "+str(sv!=0))
+                    print("buyer "+str(bv)+" "+str(bv!=0))
                     break
             # else:
             #     print("BIASSSSS")

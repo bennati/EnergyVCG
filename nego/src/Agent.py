@@ -27,13 +27,14 @@ class NegoAgent(BaseAgent):
         Returns: whether an agent is a seller or a buyer, or None if production and consumption are 0
 
         """
+        self.current_state.update({"type":None})
         state=self.current_state["perception"]
-        if state["production"] > state["consumption"] and state["production"]!=0:
+        if (state["production"] > state["consumption"]) and state["production"]!=0:
             self.current_state['perception'].update({"consumption":0}) # either seller or buyer
             self.current_state.update({"type":"seller"})
             self.current_state.update({"cost":self.current_state["perception"]["production"]*
                                        self.current_state["perception"]["main_cost"]}) # update cost for sellers
-        if state["production"] < state["consumption"] and state["consumption"]!=0:
+        if (state["production"] < state["consumption"]) and state["consumption"]!=0:
             self.current_state['perception'].update({"production":0}) # either seller or buyer
             self.current_state.update({"type":"buyer"})
         return self.current_state["type"]

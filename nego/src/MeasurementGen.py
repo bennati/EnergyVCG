@@ -127,12 +127,13 @@ class MeasurementGenReal(BaseMeasurementGen):
             consumptions=compute_consumptions(self.consumption_data,self.cons_dev,incomes,self.caste_byincome.income_max.max())
             consumptions=[i*self.consumption_offset for i in consumptions]
             productions=compute_productions(incomes)
+            bias_mediator=is_mediator_biased(self.bias_mediator) # there is only one mediator
             ret=[{"consumption":consumptions[i],
                   "tariff":positive_sampling(float(tariff),self.tariffdev), # a value normally distributed around the value in the data
                   "social_type":(1 if caste else 2),
                   "production":productions[i],
                   "biased":is_biased(caste,self.biased_low,self.biased_high),
-                  "bias_mediator":is_mediator_biased(self.bias_mediator),
+                  "bias_mediator":bias_mediator,
                   # "chance_rich":np.random.uniform()<self.chancer, # TODO should being rich depend on the income?
                   "agentID":0, "income":incomes[i],
                   "main_cost":0.1,"cost":0,"timestep":timestep,"type":None,"threshold":-1}

@@ -146,7 +146,7 @@ def split_bids(l,splitsize=1.0):
     l: a list of bids, each bid is duplicates as many times as the bid is split, e.g. a bid of 3.1 is split in 4 (1,1,1,0.1).
     """
     return [{**s,'value':i} for s in l # create a new entry with the same records as the old dict, but with an updated value
-                                for i in [1]*int(s['value']//splitsize)+[s['value']%splitsize]] # divide in bids of size splitsize
+                                for i in [1]*int(s['value']//splitsize)+([s['value']%splitsize] if s['value']%splitsize!=0 else [])] # divide in bids of size splitsize
 
 def reward_agent(decision):
     return (1 if decision["action"] is not None else np.nan) # TODO, consider lack of rewards? set 0 instead of np.nan
@@ -156,7 +156,7 @@ def compute_incomes(df,castes):
     bins=[np.random.choice(f(c,'income_min'), # determine income level randomly
                            p=f(c,'value_mean')/f(c,'value_mean').sum() # from the probability that a given caste has a given income level
     ) for c in castes]
-    return [np.random.uniform(b,float(f(c,'income_max',binno=b))) for b,c in zip(bins,castes)]
+    return [int(np.random.uniform(b,float(f(c,'income_max',binno=b)))) for b,c in zip(bins,castes)]
 
 def read_income_data(datadir):
     byincome=pd.read_csv(os.path.join(datadir,"income_byincome.csv")).drop("Per capita income category (Rs per annum)",axis=1)
