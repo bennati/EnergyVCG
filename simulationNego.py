@@ -15,7 +15,7 @@ default_params={"reps":10,       # how many times to repeat the experiments
                     "N":Ns,                          # population size
                     "low_caste":[None], # proportion of low caste agents, when None it uses the proportion in the data
                     "T":[10],                        # the duration of a run
-                    "consumption_offset":[5.0], # offsets the consumption, as househols is the USA have higher needs than rural households (the value makes consumption and production comparable)
+                    "consumption_offset":[0.05], # offsets the consumption, as househols is the USA have higher needs than rural households (the value makes consumption and production comparable)
                     "tariff_avg":[1],    # determines the data for generating the tariffs, 1 2 or 3
                     "consumption_dev":[10.0],                    # determines the variability of consumptions
                     "bias_low":[0.0],"bias_high":[0.0], # bias for agents, low and high caste

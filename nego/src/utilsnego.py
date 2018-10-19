@@ -178,7 +178,7 @@ def compute_consumptions(consumption_data,deviation,incomes,max_income,avg_cons_
                   for c in consumptions]
     return [positive_sampling(c,deviation) for c in consumptions]
 
-def compute_productions(incomes,yearly_disposable_income=0.2,installment_cost=1600,device_production=8):
+def compute_productions(incomes,yearly_disposable_income=0.2,installment_cost=1600,device_production=0.1):
     """
     Individuals must be able to afford the cost of the equipment to produce energy.
     Survey data shows that the households belonging to the bottom quintiles spends around 20\% on other expenses, which we consider disposable income to pay for electricity production.
