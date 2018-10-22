@@ -116,8 +116,6 @@ class MeasurementGenReal(BaseMeasurementGen):
         if timestep>self.t:
             return None
         else:
-            # production = [self.consumption_offset*income[i]*8/24/20000 for i in range(len(population))] # TODO what are these constants?, why is there no randomness?
-            ## TODO, why is the tariff generated from the third column while the documentation talks about the second column?
             ## compute current tariff
             tariff=self.tariff_data.ix[timestep%self.tariff_data.shape[0], # after 24 hours the day repeats
                                        "inrpriceperkwh"]*int(self.tariff_avg) # choose the column in the data
@@ -136,6 +134,7 @@ class MeasurementGenReal(BaseMeasurementGen):
                   "bias_mediator":bias_mediator,
                   # "chance_rich":np.random.uniform()<self.chancer, # TODO should being rich depend on the income?
                   "agentID":0, "income":incomes[i],
-                  "main_cost":0.1,"cost":0,"timestep":timestep,"type":None,"threshold":-1}
+                  # "main_cost":0.1,"cost":0,
+                  "timestep":timestep,"type":None,"threshold":-1}
                  for i,caste in enumerate(castes)]  # high class is 2, low class is 1, main_cost is maintenance cost
             return ret

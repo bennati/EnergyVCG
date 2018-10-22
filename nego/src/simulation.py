@@ -46,19 +46,27 @@ def run_experiment(test,conf,datadir="./"):
         print("logging "+varname)
         stats_rew=get_stats(log_tot,"reward",idx=[varname])
         stats_perc=get_stats(log_tot,"perception",idx=[varname],cols=["production","consumption","tariff"])
-        stats_decs=get_stats(log_tot,"decisions",idx=[varname],cols=["cost"])
+        # stats_decs=get_stats(log_tot,"decisions",idx=[varname],cols=["cost"])
         stats_eval=get_stats(log_tot,"evaluation",idx=[varname],cols=["gini","efficiency",
                                                                       "wealth_distribution",
                                                                       "social_welfare",
-                                                                      "market_access"])
+                                                                      "market_access",
+                                                                      "sum_surplus_prod_low",
+                                                                      "sum_surplus_prod_high",
+                                                                      "sum_surplus_cons_low",
+                                                                      "sum_surplus_cons_high",
+                                                                      "sum_orig_prod_low",
+                                                                      "sum_orig_prod_high",
+                                                                      "sum_orig_cons_low",
+                                                                      "sum_orig_cons_high"])
         stats_rew.to_csv(os.path.join(datadir,test,"agg_rewards_"+str(varname)+".csv"),index=False)
         stats_perc.to_csv(os.path.join(datadir,test,"agg_perceptions_"+str(varname)+".csv"),index=False)
-        stats_decs.to_csv(os.path.join(datadir,test,"agg_decisions_"+str(varname)+".csv"),index=False)
+        # stats_decs.to_csv(os.path.join(datadir,test,"agg_decisions_"+str(varname)+".csv"),index=False)
         stats_eval.to_csv(os.path.join(datadir,test,"agg_evaluations_"+str(varname)+".csv"),index=False)
         plotdir=os.path.join(datadir,test,"plots")
         if not os.path.exists(plotdir):
             os.makedirs(plotdir)
         plot_trend(stats_rew,varname,os.path.join(plotdir,"./rewards_"+str(test)+"_"+str(varname)+"_nego.pdf"),trends=[t for t in ["reward"] if t !=varname])
         plot_trend(stats_perc,varname,os.path.join(plotdir,"./perceptions_"+str(test)+"_"+str(varname)+"_nego.pdf"),trends=["production","consumption","tariff"])
-        plot_trend(stats_decs,varname,os.path.join(plotdir,"./decisions_"+str(test)+"_"+str(varname)+"_nego.pdf"),trends=["cost"])
+        # plot_trend(stats_decs,varname,os.path.join(plotdir,"./decisions_"+str(test)+"_"+str(varname)+"_nego.pdf"),trends=["cost"])
         plot_measures_nego(stats_eval,varname,os.path.join(plotdir,"./eval_"+str(test)+"_"+str(varname)+"_nego.pdf"))

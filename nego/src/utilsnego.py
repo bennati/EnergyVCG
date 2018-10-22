@@ -182,7 +182,7 @@ def compute_productions(incomes,yearly_disposable_income=0.2,installment_cost=16
     """
     Individuals must be able to afford the cost of the equipment to produce energy.
     Survey data shows that the households belonging to the bottom quintiles spends around 20\% on other expenses, which we consider disposable income to pay for electricity production.
-    Given that a device with a production of 8kWh costs around 1600 Rupees and the lifespan of a solar panel is around 20 years, we assume households invest all of their disposable income for the following 20 years to buy as many devices as they can afford.
+    Given that a device with a production of 0.1kWh costs around 1600 Rupees and the lifespan of a solar panel is around 20 years, we assume households invest all of their disposable income for the following 20 years to buy as many devices as they can afford.
     """
     return [i*yearly_disposable_income*20 # total disposable income over lifespan of panel
             //installment_cost               # how many panels one can afford

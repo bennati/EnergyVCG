@@ -32,8 +32,8 @@ class NegoAgent(BaseAgent):
         if (state["production"] > state["consumption"]) and state["production"]!=0:
             self.current_state['perception'].update({"consumption":0}) # either seller or buyer
             self.current_state.update({"type":"seller"})
-            self.current_state.update({"cost":self.current_state["perception"]["production"]*
-                                       self.current_state["perception"]["main_cost"]}) # update cost for sellers
+            # self.current_state.update({"cost":self.current_state["perception"]["production"]*
+            #                            self.current_state["perception"]["main_cost"]}) # update cost for sellers
         if (state["production"] < state["consumption"]) and state["consumption"]!=0:
             self.current_state['perception'].update({"production":0}) # either seller or buyer
             self.current_state.update({"type":"buyer"})
