@@ -20,6 +20,8 @@ class NegoEvaluationLogic(BaseEvaluationLogic):
         A list of dictionaries containing the evaluation of the population behavior
         """
         rewards=[i["reward"] for i in rewards]
+        agents_low=[d for d in decisions if d['social_type']==1]
+        agents_high=[d for d in decisions if d['social_type']==2]
         return [{"social_welfare":social_welfare_rawls(rewards),
                  #"social_welfare_high":social_welfare_new(rewards_high),
                  #"social_welfare_low":social_welfare_new(rewards_low),
@@ -35,6 +37,9 @@ class NegoEvaluationLogic(BaseEvaluationLogic):
                  "sum_orig_cons_low":sum([a.current_state['perception']['old_consumption'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
                  "sum_orig_cons_high":sum([a.current_state['perception']['old_consumption'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
                  "market_access":market_access(self.model.N,decisions), # agents that traded
+
+                 "market_access_low":market_access(len(agents_low),agents_low), # agents that traded
+                 "market_access_high":market_access(len(agents_high),agents_high), # agents that traded
                  #"market_access_high":success_nego(N_low,tot_high_agents),
                  "wealth_distribution":gini(rewards)}]
                  #"wealth_distribution_high":gini(rewards_high),

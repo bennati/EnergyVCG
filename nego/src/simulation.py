@@ -51,6 +51,8 @@ def run_experiment(test,conf,datadir="./"):
                                                                       "wealth_distribution",
                                                                       "social_welfare",
                                                                       "market_access",
+                                                                      "market_access_low",
+                                                                      "market_access_high",
                                                                       "sum_surplus_prod_low",
                                                                       "sum_surplus_prod_high",
                                                                       "sum_surplus_cons_low",
