@@ -188,3 +188,29 @@ def compute_productions(incomes,yearly_disposable_income=0.2,installment_cost=16
             //installment_cost               # how many panels one can afford
             *device_production              # convert to kWh
             for i in incomes] # the affordable device produces this many kWh
+
+def bias_fct_divide_castes(seller, buyer):
+    s=seller.current_state["perception"]
+    b=buyer.current_state["perception"]
+    assert(s["bias_mediator"]==b["bias_mediator"]) # there is only one mediator
+    mediator_biased=s["bias_mediator"] # boolean or None if the mediator is not biased
+    if mediator_biased is None: # the mediator does not influence trading, the agents determine the outcome of the transaction
+        cantrade=not (b["biased"] and b["social_type"]==2 and s["social_type"]==1) # buyers of high caste don't want to trade with low caste, sellers can trade with anyone
+    elif mediator_biased: # the mediator is biased, it determines the outcome of the transaction
+        cantrade=b["social_type"]==s["social_type"]
+    else:                   # the mediator is not biased, the trade can take place
+        cantrade=True
+    return cantrade
+
+def bias_fct_mediator_equals_agents(seller, buyer):
+    s=seller.current_state["perception"]
+    b=buyer.current_state["perception"]
+    assert(s["bias_mediator"]==b["bias_mediator"]) # there is only one mediator
+    mediator_biased=s["bias_mediator"] # boolean or None if the mediator is not biased
+    if mediator_biased is None: # the mediator does not influence trading, the agents determine the outcome of the transaction
+        cantrade=not (b["biased"] and b["social_type"]==2 and s["social_type"]==1) # buyers of high caste don't want to trade with low caste, sellers can trade with anyone
+    elif mediator_biased: # the mediator is biased, it determines the outcome of the transaction
+        cantrade=not (b["social_type"]==2 and s["social_type"]==1) # buyers of high caste don't want to trade with low caste, sellers can trade with anyone
+    else:                   # the mediator is not biased, the trade can take place
+        cantrade=True
+    return cantrade

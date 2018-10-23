@@ -1,10 +1,13 @@
 from src.DecisionLogic import BaseDecisionLogic
-from nego.src.utilsnego import split_bids
+from nego.src.utilsnego import *
 import operator
 import math
 import numpy as np
 
 class NegoDecisionLogic(BaseDecisionLogic):
+    def __init__(self, model,bias_fct=bias_fct_divide_castes):
+        super().__init__(model)
+        self.bias_fct=bias_fct
     def get_decision(self,perceptions):
         """
         Args:
@@ -23,20 +26,6 @@ class NegoDecisionLogic(BaseDecisionLogic):
                    "biased":p["biased"],"bias_mediator":p["bias_mediator"]}
                   for a,p in zip(self.model.schedule.agents,perceptions)]
         return self.act
-
-    def trade_allowed(self,seller, buyer):
-        s=seller.current_state["perception"]
-        b=buyer.current_state["perception"]
-        assert(s["bias_mediator"]==b["bias_mediator"]) # there is only one mediator
-        # TODO should the mediator bias influence also the partner selection?
-        mediator_biased=s["bias_mediator"] # boolean or None if the mediator is not biased
-        if mediator_biased is None: # the mediator does not influence trading, the agents determine the outcome of the transaction
-            cantrade=not (b["biased"] and b["social_type"]==2 and s["social_type"]==1) # buyers of high caste don't want to trade with low caste, sellers can trade with anyone
-        elif mediator_biased: # the mediator is biased, it determines the outcome of the transaction
-            cantrade=b["social_type"]==s["social_type"]
-        else:                   # the mediator is not biased, the trade can take place
-            cantrade=True
-        return cantrade
 
     def update_partner(self,action,agent,partner):
         agent.update({"action":action,"partner":([partner["agent"]
@@ -70,7 +59,7 @@ class NegoDecisionLogic(BaseDecisionLogic):
             i+=1; j+=1 # move to next buyer and seller. If the trade is biased, skip current buyer and seller
             sv=seller["value"]
             bv=buyer["value"]
-            if self.trade_allowed(seller["agent"],buyer["agent"]): # trade is not prevented
+            if self.bias_fct(seller["agent"],buyer["agent"]): # trade is not prevented
                 # print("-------------------- SELLERS "+str([p["value"] for p in sellers_sorted]))
                 # print("-------------------- BUYERS "+str([p["value"] for p in buyers_sorted]))
                 if sv !=0 and bv !=0:  # can trade

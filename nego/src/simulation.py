@@ -28,10 +28,11 @@ def run_experiment(test,conf,datadir="./"):
         for r in range(conf["reps"]):
             params=p.to_dict()
             params.update({"repetition":r})
-            f=functools.partial(conf["meas_fct"],**params)
-            model=NegoSupervisor(N=int(params["N"]),measurement_fct=f,
+            fm=functools.partial(conf["meas_fct"],**params)
+            fd=functools.partial(conf["dec_fct"],bias_fct=conf['bias_fct'])
+            model=NegoSupervisor(N=int(params["N"]),measurement_fct=fm,
                                  bidsplit=conf['bidsplit'],multibid=conf['multibid'],
-                                 decision_fct=conf["dec_fct"],
+                                 decision_fct=fd,
                                  agent_decision_fct=conf["dec_fct_agent"],
                                  reward_fct=conf["rew_fct"],
                                  evaluation_fct=conf["eval_fct"],

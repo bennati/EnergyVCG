@@ -11,6 +11,7 @@ biases=[0.0,0.2,0.5,0.8]
 
 default_params={"reps":10,       # how many times to repeat the experiments
                 "dec_fct":NegoDecisionLogic,"dec_fct_agent":BaseDecisionLogic,"rew_fct":NegoRewardLogic, "eval_fct":NegoEvaluationLogic,"meas_fct":MeasurementGenReal, # the logic to use during the experiments
+                "bias_fct":bias_fct_mediator_equals_agents, # the kind of bias to use
                 "params":{                           # the parameters of the experiments
                     "N":Ns,                          # population size
                     "low_caste":[None], # proportion of low caste agents, when None it uses the proportion in the data
