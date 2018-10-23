@@ -203,13 +203,6 @@ A data frame with columns 'X_mean', 'X_std' and 'X_ci' containing the statistics
         data_.drop("count_sum",1,inplace=True)
     return data_
 
-def get_stats(log,varname,idx=["timestep"],cols=None):
-    """
-    Log: a list of dictionaries or data frames
-    """
-    df=[pd.DataFrame(i[varname]) for i in log]
-    return compute_stats(df,idx=idx,columns=cols)
-
 def plot_trend(df,xname,filename,trends=None):
     if trends is None:
         trends=[d[:-5] for d in df.columns if ("_mean" in d)]

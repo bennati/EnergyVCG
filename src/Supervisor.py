@@ -224,6 +224,7 @@ class BaseSupervisor(Model):
                     dct[k]=pd.DataFrame(v)
                     for name,val in params.items():
                         dct[k][name]=val # add the extra columns
+                    dct[k]['timestep']=dct['timestep']
             # elif isinstance(v,dict):
             #     for name,val in params.items():
             #         dct[k][name]=val # add the extra columns

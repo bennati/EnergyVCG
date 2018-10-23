@@ -11,20 +11,23 @@ from nego.src.Evaluation import  NegoEvaluationLogic
 from src.utils import *
 from nego.src.Agent import *
 
-def save_result(datadir,test,params,log):
-    res_decs=pd.concat([pd.DataFrame(i["decisions"]) for i in log])
-    res_decs.to_csv(os.path.join(datadir,str(test),"decisions_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz"),index=False,compression='gzip')
-    for l in ["perception","reward","evaluation"]:
-        pd.concat([pd.DataFrame(i[l]) for i in log]).to_csv(os.path.join(datadir,str(test),str(l)+"_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv.gz"),index=False,compression='gzip')
-    return res_decs
+def save_result(df,datadir,test,params,l):
+    """
+    Log is a list that is 'reps' long, which contains lists 'T' long, which contain dictionaries
+    """
+    df.to_csv(os.path.join(datadir,str(test),str(l)+"_"+str("_".join([str(k)+str(v) for k,v in params.items()]))+".csv"),index=False)
 
 def run_experiment(test,conf,datadir="./"):
     print("starting "+str(test))
     if not os.path.exists(os.path.join(datadir,test)):
         os.makedirs(os.path.join(datadir,test))
-    log_tot=[]
+    res_rew=[]
+    res_perc=[]
+    res_eval=[]
+    res_decs=[]
     for idx,p in expandgrid(conf["params"]).iterrows():
         print("params "+str(p))
+        log_tot=[]
         for r in range(conf["reps"]):
             params=p.to_dict()
             params.update({"repetition":r})
@@ -38,17 +41,25 @@ def run_experiment(test,conf,datadir="./"):
                                  evaluation_fct=conf["eval_fct"],
                                  agent_type=NegoAgent)
             model.run(params=params)
-            log=model.log[-1]
+            log=model.log
             ## save intermediate results
             log_tot=log_tot+[log]
-        save_result(datadir,test,{k:v for k,v in params.items() if k!="repetition"},log_tot[-int(conf["reps"]):]) # log the last conf['reps'] iterations (repetitions)
+        ## Log is a list that is 'reps' long, which contains lists 'T' long, which contain dictionaries
+        res_rew.append(pd.concat([pd.concat([pd.DataFrame(t["reward"]) for t in reps]) for reps in log_tot]))
+        save_result(res_rew[-1],datadir,test,p.to_dict(),"reward")
+        res_perc.append(pd.concat([pd.concat([pd.DataFrame(t["perception"]) for t in reps]) for reps in log_tot]))
+        save_result(res_perc[-1],datadir,test,p.to_dict(),"perception")
+        res_eval.append(pd.concat([pd.concat([pd.DataFrame(t["evaluation"]) for t in reps]) for reps in log_tot]))
+        save_result(res_eval[-1],datadir,test,p.to_dict(),"evaluation")
+        res_decs.append(pd.concat([pd.concat([pd.DataFrame(t["decisions"]) for t in reps]) for reps in log_tot]))
+        save_result(res_decs[-1],datadir,test,p.to_dict(),"decisions")
     varnames=[k for k,v in conf["params"].items() if len(v)>1] # keep vars for which there is more than one value
     for varname in varnames:
         print("logging "+varname)
-        stats_rew=get_stats(log_tot,"reward",idx=[varname])
-        stats_perc=get_stats(log_tot,"perception",idx=[varname],cols=["production","consumption","tariff"])
-        # stats_decs=get_stats(log_tot,"decisions",idx=[varname],cols=["cost"])
-        stats_eval=get_stats(log_tot,"evaluation",idx=[varname],cols=["gini",
+        stats_rew=compute_stats(res_rew,idx=[varname])
+        stats_perc=compute_stats(res_perc,idx=[varname],columns=["production","consumption","tariff"])
+        # stats_decs=compute_stats(res_decs,idx=[varname],columns=["cost"])
+        stats_eval=compute_stats(res_eval,idx=[varname],columns=["gini",
                                                                       "efficiency",
                                                                       "efficiency_low",
                                                                       "efficiency_high",
