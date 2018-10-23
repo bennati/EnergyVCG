@@ -48,7 +48,10 @@ def run_experiment(test,conf,datadir="./"):
         stats_rew=get_stats(log_tot,"reward",idx=[varname])
         stats_perc=get_stats(log_tot,"perception",idx=[varname],cols=["production","consumption","tariff"])
         # stats_decs=get_stats(log_tot,"decisions",idx=[varname],cols=["cost"])
-        stats_eval=get_stats(log_tot,"evaluation",idx=[varname],cols=["gini","efficiency",
+        stats_eval=get_stats(log_tot,"evaluation",idx=[varname],cols=["gini",
+                                                                      "efficiency",
+                                                                      "efficiency_low",
+                                                                      "efficiency_high",
                                                                       "wealth_distribution",
                                                                       "social_welfare",
                                                                       "market_access",

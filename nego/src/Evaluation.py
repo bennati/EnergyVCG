@@ -27,6 +27,8 @@ class NegoEvaluationLogic(BaseEvaluationLogic):
                  #"social_welfare_low":social_welfare_new(rewards_low),
                  "gini":gini([i["action"] for i in decisions if i is not None]),
                  "efficiency":efficiency_nego(self.model.schedule.agents), # sum efficiencies (each is between 0 and 1) and divide by the number of agents whose efficency is greater than 0
+                 "efficiency_low":efficiency_nego([a for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
+                 "efficiency_high":efficiency_nego([a for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
                  # TODO is the formula of efficiency correct?
                  "sum_surplus_prod_low":sum([d['production'] for d in decisions if d['social_type']==1]),
                  "sum_surplus_prod_high":sum([d['production'] for d in decisions if d['social_type']==2]),
