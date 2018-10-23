@@ -129,7 +129,7 @@ def is_mediator_biased(bias_mediator):
     '''
     Returns None if the mediator is not biased, or True with a probability equal to the parameter 'bias_mediator'
     '''
-    return (np.random.uniform()<bias_mediator if bias_mediator!=0 else None) # the mediator is not biased if the bias is 0
+    return (None if bias_mediator is None else np.random.uniform()<bias_mediator) # the mediator is not biased if the bias is 0
 
 def lo_hi(caste,lo,hi):
     return np.random.uniform()<(lo if caste else hi)
