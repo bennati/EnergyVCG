@@ -123,7 +123,7 @@ class BaseSupervisor(Model):
             return None
         else:
             pdict=[]
-            for i,m in zip(range(len(measurements)),measurements):
+            for i,m in enumerate(measurements):
                 d=m.copy()
                 # d.update({"agentID":i})
                 # add here any extra information to give to the agents

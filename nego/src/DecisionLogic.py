@@ -15,12 +15,9 @@ class NegoDecisionLogic(BaseDecisionLogic):
         Returns: a list of dictionaries representing the contributions of the agents.
         Must contain keys ["agentID", "timestep"]
         """
-        # decs=[a.decisions(p) for a,p in zip(self.model.schedule.agents,perceptions)]
-        # call each agent's decision fct with the appropriate perception
-        # partner = self.model.partner_selection_orderbid()
         self.act=[{"production":p["production"],"consumption":p["consumption"],
                    "tariff":p["tariff"],"agentID":a.unique_id,
-                   "cost":a.current_state["cost"],
+                   # "cost":a.current_state["cost"],
                    "reward":a.current_state["reward"],"action":a.current_state["action"],
                    "partner":a.current_state["partner"],"social_type":p["social_type"],
                    "biased":p["biased"],"bias_mediator":p["bias_mediator"]}
@@ -89,24 +86,8 @@ class NegoDecisionLogic(BaseDecisionLogic):
             #     print("BIASSSSS")
         # print("-------------------- LAST SELLERS "+str([p["value"] for p in sellers_sorted]))
         # print("-------------------- LAST BUYERS "+str([p["value"] for p in buyers_sorted]))
-        ## update agents states
-        for a in population:
-            ## aggregate values belonging to the same user, used in case of bidsplit
-            def update_agent_state(agent,dct,varname):
-                l=[x for x in dct if x['agent']==agent] # isolate the entries that correspond to the agent
-                if l!=[]:
-                    act=l[0]['action']
-                    assert([x['action']==act for x in l]) # all actions are the same
-                    partner=l[0]['partner']
-                    assert([x['partner']==partner for x in l]) # all partners are the same
-                    agent.current_state.update({"action":act,"partner":partner})
-                    # if agent.current_state['perception'][varname]!=sum([x['value'] for x in l]):
-                    #     print("Updating "+varname+" from "+str(agent.current_state['perception'][varname])+" to "+str([x['value'] for x in l]))
-                    agent.current_state['perception'].update({varname:sum([x['value'] for x in l])}) # sum all contributions in dict
-            update_agent_state(a,sellers_sorted,'production')
-            update_agent_state(a,buyers_sorted,'consumption')
-        # print("-------------------- PARTNERS "+str([a.current_state["partner"] for a in population]))
-        return [({"agent":a,"partner":a.current_state["partner"]}) for a in population]
+        # return [({"agent":a,"partner":a.current_state["partner"]}) for a in population]
+        return sellers_sorted+buyers_sorted
 
 class NegoDecisionLogicAgent(BaseDecisionLogic):
     """
