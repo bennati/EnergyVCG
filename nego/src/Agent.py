@@ -19,7 +19,7 @@ class NegoAgent(BaseAgent):
         """
         super().__init__(unique_id,model,decision_fct=decision_fct)
         self.current_state={"perception":{"production":0,"consumption":0,"tariff":0,"social_type":0},"type":None,
-                            "partner":None,"action":0,"cost":0,"reward":0,"agentID":self.unique_id}
+                            "partner":None,"action":0,"cost":0,"reward":{"agentID":self.unique_id,"reward":0},"agentID":self.unique_id}
 
     def seller_buyer(self):
         """

@@ -18,8 +18,10 @@ class NegoDecisionLogic(BaseDecisionLogic):
         self.act=[{"production":p["production"],"consumption":p["consumption"],
                    "tariff":p["tariff"],"agentID":a.unique_id,
                    # "cost":a.current_state["cost"],
-                   "reward":a.current_state["reward"],"action":a.current_state["action"],
-                   "partner":a.current_state["partner"],"social_type":p["social_type"],
+                   "reward":a.current_state["reward"]['reward'],"action":a.current_state["action"],
+                   "partner":(None if a.current_state["partner"] is None else [x.unique_id for x in a.current_state["partner"]]),
+                   "social_type_partner":(None if a.current_state["partner"] is None else [x.current_state['perception']['social_type'] for x in a.current_state["partner"]]),
+                   "social_type":p["social_type"],
                    "biased":p["biased"],"bias_mediator":p["bias_mediator"]}
                   for a,p in zip(self.model.schedule.agents,perceptions)]
         return self.act
