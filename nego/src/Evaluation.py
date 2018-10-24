@@ -34,10 +34,10 @@ class NegoEvaluationLogic(BaseEvaluationLogic):
                  "sum_surplus_prod_high":sum([d['production'] for d in decisions if d['social_type']==2]),
                  "sum_surplus_cons_low":sum([d['consumption'] for d in decisions if d['social_type']==1]),
                  "sum_surplus_cons_high":sum([d['consumption'] for d in decisions if d['social_type']==2]),
-                 "sum_orig_prod_low":sum([a.current_state['perception']['old_production'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
-                 "sum_orig_prod_high":sum([a.current_state['perception']['old_production'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
-                 "sum_orig_cons_low":sum([a.current_state['perception']['old_consumption'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
-                 "sum_orig_cons_high":sum([a.current_state['perception']['old_consumption'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
+                 "sum_orig_prod_low":sum([a.current_state['perception']['initial_production'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
+                 "sum_orig_prod_high":sum([a.current_state['perception']['initial_production'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
+                 "sum_orig_cons_low":sum([a.current_state['perception']['initial_consumption'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
+                 "sum_orig_cons_high":sum([a.current_state['perception']['initial_consumption'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
                  "market_access":market_access(self.model.N,decisions), # agents that traded
 
                  "market_access_low":market_access(len(agents_low),agents_low), # agents that traded

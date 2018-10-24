@@ -80,7 +80,7 @@ import os
 #                                           else 1))),
 #               "bias_degree":(choice((True,False),1,p=(self.bias_mediator,(1-self.bias_mediator))))[0],
 #               "cost":0,"timestep":timestep,"agentID":0,"type":None,
-#               "old_production":0, "old_consumption":0}
+#               "initial_production":0, "initial_consumption":0}
 #              for i in range(len(population))]
 #         return ret
 

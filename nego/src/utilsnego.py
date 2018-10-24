@@ -32,7 +32,7 @@ def efficiency_nego(population):
             state=a.current_state["perception"]
             attr=("production" if a.current_state['type']=="seller"
                   else "consumption")              # buyer
-            efficiency=1-(state[attr]/state["old_"+str(attr)]) # one if all needs are satisfied, a fraction otherwise
+            efficiency=1-(state[attr]/state["initial_"+str(attr)]) # one if all needs are satisfied, a fraction otherwise
             eff.append(efficiency)
         else:
             eff.append(np.nan)

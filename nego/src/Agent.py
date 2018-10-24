@@ -43,6 +43,6 @@ class NegoAgent(BaseAgent):
         self.current_state["action"]=None
         self.current_state["partner"]=None
         self.seller_buyer()
-        self.current_state["perception"]["old_production"]=self.current_state["perception"]["production"]
-        self.current_state["perception"]["old_consumption"]=self.current_state["perception"]["consumption"]
+        self.current_state["perception"]["initial_production"]=self.current_state["perception"]["production"]
+        self.current_state["perception"]["initial_consumption"]=self.current_state["perception"]["consumption"]
         super().step()

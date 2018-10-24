@@ -105,6 +105,6 @@ class NegoDecisionLogicAgent(BaseDecisionLogic):
         partner = self.model.current_state["partner"]
         if self.model.current_state["type"]=="seller":
             if partner!=None:
-                assert(rew1["old_production"]-rew1["production"]>=0) # production cannot increase
-                rew.update({"reward":(rew1["old_production"]-rew1["production"])*2})
+                assert(rew1["initial_production"]-rew1["production"]>=0) # production cannot increase
+                rew.update({"reward":(rew1["initial_production"]-rew1["production"])*2})
         return self.model.current_state["reward"]
