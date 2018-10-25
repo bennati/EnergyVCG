@@ -214,3 +214,41 @@ def bias_fct_mediator_equals_agents(seller, buyer):
     else:                   # the mediator is not biased, the trade can take place
         cantrade=True
     return cantrade
+
+def plot_measures_nego(df,xname,filename,trends=None):
+    fig=plt.figure()
+    for measures,ylim,i in [[["market_access",
+                              "market_access_low",
+                              "market_access_high",
+                              "satifaction_cons_low",
+                              "satifaction_cons_high",
+                              "satifaction_prod_low",
+                              "satifaction_prod_high",
+                              "efficiency"],[0,1],0]
+                            ,[["inequality",
+                               "trade_low_low",
+                               "trade_low_high",
+                               "trade_high_low",
+                               "trade_high_high",
+                               "sum_surplus_prod_low",
+                               "sum_surplus_prod_high",
+                               "sum_surplus_cons_low",
+                               "sum_surplus_cons_high",
+                               "sum_initial_prod_low",
+                               "sum_initial_prod_high",
+                               "sum_initial_cons_low",
+                               "sum_initial_cons_high"
+                            ],None,1]]:
+        ax = fig.add_subplot(121+i)
+        x=df[xname]
+        ax.set_xlabel(xname)
+    #fig.suptitle(title)
+    #ax.set_ylabel(ylab or str(y))
+    # if ylim:
+    #     ax.set_ylim(ylim)
+        for y in measures:
+            ax.plot(x,df[y+"_mean"],label=y)
+            ax.fill_between(x,np.asarray(df[y+"_mean"])-np.asarray(df[y+"_ci"]),np.asarray(df[y+"_mean"])+np.asarray(df[y+"_ci"]),alpha=0.2)
+        ax.legend()
+    fig.savefig(filename,format='pdf')
+    plt.close(fig)

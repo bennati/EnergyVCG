@@ -19,31 +19,47 @@ class NegoEvaluationLogic(BaseEvaluationLogic):
         Returns:
         A list of dictionaries containing the evaluation of the population behavior
         """
-        rewards=[i["reward"] for i in rewards]
+        # rewards=[i["reward"] for i in rewards]
         agents_low=[d for d in decisions if d['social_type']==1]
         agents_high=[d for d in decisions if d['social_type']==2]
-        return [{"social_welfare":social_welfare_rawls(rewards),
-                 #"social_welfare_high":social_welfare_new(rewards_high),
-                 #"social_welfare_low":social_welfare_new(rewards_low),
-                 "gini":gini([i["action"] for i in decisions if i is not None]),
-                 "efficiency":efficiency_nego(self.model.schedule.agents), # sum efficiencies (each is between 0 and 1) and divide by the number of agents whose efficency is greater than 0
-                 "efficiency_low":efficiency_nego([a for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
-                 "efficiency_high":efficiency_nego([a for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
-                 # TODO is the formula of efficiency correct?
-                 "sum_surplus_prod_low":sum([d['production'] for d in decisions if d['social_type']==1]),
-                 "sum_surplus_prod_high":sum([d['production'] for d in decisions if d['social_type']==2]),
-                 "sum_surplus_cons_low":sum([d['consumption'] for d in decisions if d['social_type']==1]),
-                 "sum_surplus_cons_high":sum([d['consumption'] for d in decisions if d['social_type']==2]),
-                 "sum_orig_prod_low":sum([a.current_state['perception']['initial_production'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
-                 "sum_orig_prod_high":sum([a.current_state['perception']['initial_production'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
-                 "sum_orig_cons_low":sum([a.current_state['perception']['initial_consumption'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==1]),
-                 "sum_orig_cons_high":sum([a.current_state['perception']['initial_consumption'] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==2]),
-                 "market_access":market_access(self.model.N,decisions), # agents that traded
-
-                 "market_access_low":market_access(len(agents_low),agents_low), # agents that traded
-                 "market_access_high":market_access(len(agents_high),agents_high), # agents that traded
-                 #"market_access_high":success_nego(N_low,tot_high_agents),
-                 "wealth_distribution":gini(rewards)}]
-                 #"wealth_distribution_high":gini(rewards_high),
-                 #"wealth_distribution_low":gini(rewards_low),
-                 #"market_access_low":success_nego(N_high,tot_low_agents)}]
+        sellers_low=[d for d in agents_low if d['action']==1]
+        sellers_high=[d for d in agents_high if d['action']==1]
+        value_by_caste= lambda val,caste: sum([a.current_state['perception'][val] for a in self.model.schedule.agents if a.current_state['perception']['social_type']==caste])
+        trade_by_caste =lambda caste_seller,caste_buyer: [
+            sum([t for p,t in zip(a.current_state['partner'],a.current_state['transactions']) if p.current_state['perception']['social_type']==caste_buyer])
+             for a in self.model.schedule.agents if (a.current_state['perception']['social_type']==caste_seller) & (a.current_state['action']==1)]
+        tot_trade=sum(trade_by_caste(1,1)+trade_by_caste(1,2)+trade_by_caste(2,1)+trade_by_caste(2,2))
+        assert(round(tot_trade,4)==round(sum([i for a in [x for x in self.model.schedule.agents if x.current_state['action']==1] for i in a.current_state['transactions']]),4)) # all transactions are captured
+        assert(round(tot_trade,4)<=round(sum([x.current_state['perception']['initial_production'] for x in self.model.schedule.agents]),4))
+        assert(round(tot_trade,4)<=round(sum([x.current_state['perception']['initial_consumption'] for x in self.model.schedule.agents]),4))
+        div=lambda d,n: None if (n==0) | (n is None) | (d is None) else d/n
+        def proportion(d,n):
+            ret=div(d,n)
+            if ret is not None:
+                assert((round(ret,4)<=1) & (round(ret,4)>=0))
+            return ret
+        hd=proportion(sum(trade_by_caste(1,1)+trade_by_caste(2,1)),value_by_caste("initial_consumption",1))
+        ho=proportion(sum(trade_by_caste(1,2)+trade_by_caste(2,2)),value_by_caste("initial_consumption",2))
+        return [{
+            "market_access":proportion(len(sellers_low)+len(sellers_high),len(decisions)),
+            "market_access_low":proportion(len(sellers_low),len(agents_low)),
+            "market_access_high":proportion(len(sellers_high),len(agents_high)),
+            "trade_low_low":sum(trade_by_caste(1,1)),
+            "trade_high_low":sum(trade_by_caste(2,1)),
+            "trade_low_high":sum(trade_by_caste(1,2)),
+            "trade_high_high":sum(trade_by_caste(2,2)),
+            "sum_surplus_prod_low":value_by_caste("production",1),
+            "sum_surplus_prod_high":value_by_caste("production",2),
+            "sum_surplus_cons_low":value_by_caste("consumption",1),
+            "sum_surplus_cons_high":value_by_caste("consumption",2),
+            "sum_initial_prod_low":value_by_caste("initial_production",1),
+            "sum_initial_prod_high":value_by_caste("initial_production",2),
+            "sum_initial_cons_low":value_by_caste("initial_consumption",1),
+            "sum_initial_cons_high":value_by_caste("initial_consumption",2),
+            "satifaction_cons_low":hd,
+            "satifaction_cons_high":ho,
+            "satifaction_prod_low":proportion(sum(trade_by_caste(1,1)+trade_by_caste(1,2)),value_by_caste("initial_production",1)),
+            "satifaction_prod_high":proportion(sum(trade_by_caste(2,1)+trade_by_caste(2,2)),value_by_caste("initial_production",2)),
+            "efficiency":proportion(tot_trade,min(value_by_caste("initial_consumption",1)+value_by_caste("initial_consumption",2),value_by_caste("initial_production",1)+value_by_caste("initial_production",2))),
+            "inequality":div(hd,ho)
+        }]

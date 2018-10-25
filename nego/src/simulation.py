@@ -59,23 +59,27 @@ def run_experiment(test,conf,datadir="./"):
         stats_rew=compute_stats(res_rew,idx=[varname])
         stats_perc=compute_stats(res_perc,idx=[varname],columns=["production","consumption","tariff"])
         # stats_decs=compute_stats(res_decs,idx=[varname],columns=["cost"])
-        stats_eval=compute_stats(res_eval,idx=[varname],columns=["gini",
-                                                                      "efficiency",
-                                                                      "efficiency_low",
-                                                                      "efficiency_high",
-                                                                      "wealth_distribution",
-                                                                      "social_welfare",
-                                                                      "market_access",
+        stats_eval=compute_stats(res_eval,idx=[varname],columns=["market_access",
                                                                       "market_access_low",
                                                                       "market_access_high",
+                                                                 "trade_low_low",
+                                                                 "trade_high_low",
+                                                                 "trade_low_high",
+                                                                 "trade_high_high",
                                                                       "sum_surplus_prod_low",
                                                                       "sum_surplus_prod_high",
                                                                       "sum_surplus_cons_low",
                                                                       "sum_surplus_cons_high",
-                                                                      "sum_orig_prod_low",
-                                                                      "sum_orig_prod_high",
-                                                                      "sum_orig_cons_low",
-                                                                      "sum_orig_cons_high"])
+                                                                 "sum_initial_prod_low",
+                                                                 "sum_initial_prod_high",
+                                                                 "sum_initial_cons_low",
+                                                                 "sum_initial_cons_high",
+                                                                 "satifaction_cons_low",
+                                                                 "satifaction_cons_high",
+                                                                 "satifaction_prod_low",
+                                                                 "satifaction_prod_high",
+                                                                 "efficiency",
+                                                                 "inequality"])
         stats_rew.to_csv(os.path.join(datadir,test,"agg_rewards_"+str(varname)+".csv"),index=False)
         stats_perc.to_csv(os.path.join(datadir,test,"agg_perceptions_"+str(varname)+".csv"),index=False)
         # stats_decs.to_csv(os.path.join(datadir,test,"agg_decisions_"+str(varname)+".csv"),index=False)

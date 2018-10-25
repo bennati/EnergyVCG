@@ -238,24 +238,6 @@ def plot_measures(df,xname,filename,trends=None):
     fig.savefig(filename,format='pdf')
     plt.close(fig)
 
-def plot_measures_nego(df,xname,filename,trends=None):
-    fig=plt.figure()
-    for measures,ylim,i in [[["efficiency","gini","market_access"],[0,1],0]
-                            ,[["social_welfare","wealth_distribution"],None,1]]:
-        ax = fig.add_subplot(121+i)
-        x=df[xname]
-        ax.set_xlabel(xname)
-    #fig.suptitle(title)
-    #ax.set_ylabel(ylab or str(y))
-    # if ylim:
-    #     ax.set_ylim(ylim)
-        for y in measures:
-            ax.plot(x,df[y+"_mean"],label=y)
-            ax.fill_between(x,np.asarray(df[y+"_mean"])-np.asarray(df[y+"_ci"]),np.asarray(df[y+"_mean"])+np.asarray(df[y+"_ci"]),alpha=0.2)
-        ax.legend()
-    fig.savefig(filename,format='pdf')
-    plt.close(fig)
-
 def expandgrid(dct):
     """
     dct: A dictionary where the keys are variables and the values are lists of values for these variables
