@@ -56,55 +56,76 @@ def plot_trend(df,xname,filename,trends=None,yname=None,
     plt.close(fig)
 
 datadir="./output/"
-plotdir=os.path.join(datadir,"plots")
+plotdir=os.path.join(datadir,"plots_cmp")
 if not os.path.exists(plotdir):
     os.makedirs(plotdir)
-# treatments=[["exp_base","B."],
-#             ["exp1","No bias"],
-#             ["exp2","No bias, Bidsplit"]]
-# varnames=[["N","number of agents"]]
 
-treatments=[["exp3","Mediator-bias"],
-            ["exp4","M. Bidsplit"]]
-varnames=[["N","number of agents"],
-          ["bias_degree","Chance of mediator discriminating"]]
+#Exp 1
+treatments=[["exp_base_10_0025","Bilateral"],
+            ["exp4_10_0025","Multibid"]]
+varnames=[["bias_high","Discrimination"]]
+# Exp 2
+treatments=[["exp_base_10_0025","Bilateral"],
+            ["exp1_10_0025","Mediated"],
+            ["exp4_10_0025","Multibid"]]
+varnames=[[["bias_high","bias_mediator"],"Discrimination"],["consumption_offset","Consumption offset"]]
+# Exp 3
+treatments=[["exp_base_10_0025","Bilateral"],
+            ["exp1_10_0025","Mediated"],
+            ["exp3_10_0025","Mediated bidsplitting"]]
+varnames=[[["bias_high","bias_mediator"],"Discrimination"]]
 
-treatments=[["test_bidsplit","Split"],
-            ["test_nobidsplit","No Split"]]
-varnames=[["N","number of agents"]]
+measures_eval=[["efficiency","Efficiency"],
+               ["satifaction_cons_low","theta low"],
+               ["satifaction_cons_high","theta high"],
+               ["satifaction_prod_low","eta low"],
+               ["satifaction_prod_high","eta high"]]
 
-treatments=[["test_bias_agents","Biased agents"]]
-varnames=[["N","number of agents"],
-          ["bias_low","Low-caste bias"],
-          ["bias_high","High-caste bias"]]
+measures_decs=[] #[["cost","Cost"]]
+measures_percs=[["production","Rest production"],["consumption","Rest consumption"],["tariff","Tariff"]]
+measures_rews=[] #[["reward","Reward"]]
 
-# treatments=[["test_bias_mediator","Biased mediator"]]
-# varnames=[["N","number of agents"],
-#           ["bias_degree","Mediator bias"]]
-
-treatments=[["test_prod_split","Split"],["test_prod_nosplit","No Split"]]
-varnames=[["N","number of agents"],
-          ["Production"]]
-
-measures=[["efficiency","Efficiency"],["gini","Inequality, number of sellers and buyers"],
-          ["social_welfare","social welfare"],
-          #["social_welfare_low","social welfare, low caste"],
-          #["social_welfare_high","social welfare, high caste"],
-          ["market_access","Market access"],
-         # ["market_access_low","Market access, low caste"],
-          ["wealth_distribution","Inequality of profits"]]
-          #["wealth_distribution_low","Inequality of profits, low caste"],
-          #["market_access_high","Market access, high caste"]]
-          #,["wealth_distribution_high","Inequality of profits, high caste"]]
-for v,vl in varnames:
+def read_data_type(t,v):
     ret=[]
-    for d,l in treatments:
-        folder=os.path.join(datadir,d)
-        tmp=pd.read_csv(os.path.join(folder,"evaluations_"+v+".csv"))
-        tmp.drop("Unnamed: 0",axis=1,inplace=True)
-        tmp["treatment"]=l
-        ret.append(tmp)
-    ret=pd.concat(ret)
-    for m,l in measures:
-        plot_trend(ret,v,os.path.join(plotdir,str(v)+"_dis_bid_base_"+str(m)+".png"),
-                   yname="treatment",trends=[m],font_size=12,ylab=l,xlab=vl)
+    if not isinstance(v,list):
+        v_=[v]
+    else:
+        v_=v
+    for x in v_:                 # if there is more than one index
+        for d,l in treatments:
+            fname=os.path.join(datadir,d,"agg_"+t+"_"+x+".csv")
+            if os.path.isfile(fname):
+                tmp=pd.read_csv(fname)
+                tmp["treatment"]=l
+                ret.append(tmp)
+    if ret!=[]:
+        ret=pd.concat(ret)
+        if isinstance(v,list):
+            ret['index']=ret[v[0]]
+            for x in v[1:]:
+                ret['index']=ret['index'].add(ret[x],fill_value=0)
+    else:
+        ret=pd.DataFrame()
+    return ret
+for v,vl in varnames:
+    x=('index' if isinstance(v,list) else v)
+    evaluations=read_data_type("evaluations",v)
+    decisions=read_data_type("decisions",v)
+    perceptions=read_data_type("perceptions",v)
+    rewards=read_data_type("rewards",v)
+    if not evaluations.empty:
+        for m,l in measures_eval:
+            plot_trend(evaluations,x,os.path.join(plotdir,"eval_"+str(v)+"_"+str(m)+".png"),
+                       yname="treatment",trends=[m],font_size=12,ylab=l,xlab=vl)
+    if not decisions.empty:
+        for m,l in measures_decs:
+            plot_trend(decisions,x,os.path.join(plotdir,"decs_"+str(v)+"_"+str(m)+".png"),
+                       yname="treatment",trends=[m],font_size=12,ylab=l,xlab=vl)
+    if not perceptions.empty:
+        for m,l in measures_percs:
+            plot_trend(perceptions,x,os.path.join(plotdir,"percs_"+str(v)+"_"+str(m)+".png"),
+                       yname="treatment",trends=[m],font_size=12,ylab=l,xlab=vl)
+    if not rewards.empty:
+        for m,l in measures_rews:
+            plot_trend(rewards,x,os.path.join(plotdir,"rews_"+str(v)+"_"+str(m)+".png"),
+                       yname="treatment",trends=[m],font_size=12,ylab=l,xlab=vl)
